@@ -34,7 +34,7 @@ void echo()
             int w = write(STDOUT_FILENO, rdBuf, rd);
             if (w < 0)
             {
-                warn("%s", STDIN_FILENO);
+                warn("%d", STDIN_FILENO);
             }
         }
         echo();
