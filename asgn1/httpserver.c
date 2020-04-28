@@ -7,25 +7,32 @@
 #include <unistd.h> // write
 #include <string.h> // memset
 #include <stdlib.h> // atoi
+#include <ctype.h>
 
 #define BUFFER_SIZE 512
 
 void put(uint8_t *buffer, ssize_t length, int clientSock)
 {
     printf("GOT INTO PUt\n");
-    //dprintf(clientSock, "HTTP/1.1 201 CREATED\r\n");
+    dprintf(clientSock, "HTTP/1.1 201 CREATED\r\n");
 }
 
 void get(int clientSock)
 {
     printf("GOT INTO GET\n");
-    //dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
+    dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
 }
 
 void head(int clientSock)
 {
     printf("GOT INTO HEAD\n");
-    //dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
+    dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
+}
+
+int parse(uint8_t *buffer)
+{
+    //return a number if i can get the content length
+    // if not then
 }
 
 int main(int argc, char **argv)
@@ -83,9 +90,11 @@ int main(int argc, char **argv)
     struct sockaddr client_addr;
     socklen_t client_addrlen;
 
-    size_t conLen = 0;
-    char func[4];
+    char func[5];
+    int conLen = 0;
     char preLen[20];
+    char *token;
+    char fileName[50];
 
     while (1)
     {
@@ -97,41 +106,80 @@ int main(int argc, char **argv)
         uint8_t buff[BUFFER_SIZE + 1];
         ssize_t bytes = recv(client_sockd, buff, BUFFER_SIZE, 0);
         buff[bytes] = 0; // null terminate
+
+        //parsing algorithm
+        token = strtok(buff, "\r\n");
+        sscanf(token, "%s %s ", func, fileName);
+        //check if filename violates any of the rules
+        // first check the size make sure it is less than or equal to 27 characters
+        if (strlen(fileName) > 28)
+        {
+            dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+            //printf("in filename siz\n");
+            close(client_sockd);
+        }
+        //check if filename is alphanumeric or contains -, _
+        for (int i = 1; i < strlen(fileName); i++)
+        {
+            if (!((isalpha(fileName[i])) != 0 || (isdigit(fileName[i]) != 0) || fileName[i] == '-' || fileName[i] == '_'))
+            {
+                dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+                //printf("IN Alpha num\n");
+                close(client_sockd);
+            }
+        }
+        //to move onto the next token
+        token = strtok(NULL, "\r\n");
+        // this tokenizes each part of the buffer by \r\n to seperate headers
+        // make sure that each header follows the right conventions or else throw an erroor
+        while (token != NULL)
+        {
+            if (token)
+                printf("Token: %s\n", token);
+            token = strtok(NULL, "\r\n");
+        }
+
         printf("[+] received %ld bytes from client\n[+] response: ", bytes);
-        sscanf(buff, "%s ", func);
-        sscanf(buff, "%s %zu", preLen, &conLen);
+        //sscanf(buff, "%s ", func);
+
         printf("THIS IS BUFF: %s\n", buff);
         write(STDOUT_FILENO, buff, bytes);
         printf("\n");
         printf("THIS IS THE FUNCTION: %s\n", func);
+        //sscanf(buff, " %s %d", preLen, &conLen);
 
         if (strcmp(func, "HEAD") == 0)
         {
             head(client_sockd);
-            dprintf(client_sockd, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
+            close(client_sockd);
+            //dprintf(client_sockd, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
         }
         else if (strcmp(func, "PUT") == 0)
         {
-            if (strcmp("Content-Length:", preLen) != 0)
+            printf("THIS IS THE PRLENGTH: %s", preLen);
+            printf("THE CONTENT LENGTH: %d", conLen);
+            if (strcmp("Content-Length: ", preLen) != 0)
             {
                 dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+                close(client_sockd);
             }
             else
             {
                 put(buff, conLen, client_sockd);
+                close(client_sockd);
             }
         }
         else if (strcmp(func, "GET") == 0)
         {
             get(client_sockd);
-            dprintf(client_sockd, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
+            close(client_sockd);
+            //dprintf(client_sockd, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
         }
         else
         {
             dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+            close(client_sockd);
         }
-
-        //printf("THIS IS THE Sentence before content length: %s\n", func);
     }
     return 0;
 }
