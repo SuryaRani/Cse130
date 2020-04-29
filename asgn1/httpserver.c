@@ -9,12 +9,12 @@
 #include <stdlib.h> // atoi
 #include <ctype.h>
 
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 4097
 
 void put(uint8_t *buffer, ssize_t length, int clientSock)
 {
     printf("GOT INTO PUt\n");
-    dprintf(clientSock, "HTTP/1.1 201 CREATED\r\n");
+    dprintf(clientSock, "HTTP/1.1 201 CREATED\r\nContent-Length: 0\r\n\r\n");
 }
 
 void get(int clientSock)
@@ -130,12 +130,32 @@ int main(int argc, char **argv)
         }
         //to move onto the next token
         token = strtok(NULL, "\r\n");
+        char header1[40];
+        char header2[40];
         // this tokenizes each part of the buffer by \r\n to seperate headers
         // make sure that each header follows the right conventions or else throw an erroor
         while (token != NULL)
         {
-            if (token)
-                printf("Token: %s\n", token);
+            // this is to check if it is giving content length in request
+            if (sscanf(token, "Content-Length: %d", &conLen) > 0)
+            {
+                printf("This is content length: %d\n", conLen);
+            }
+            // this is checking if its a normal header and if it is we just ignore it
+            else if (sscanf(token, "%s %s", header1, header2) == 2)
+            {
+                if (header1[strlen(header1) - 1] != ':')
+                {
+                    dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+                }
+            }
+            // if it contains another \r\n in the string that means its the end of the request and might have data after it
+            // we must read the data after if it is a put
+            else
+            {
+                dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+            }
+            printf("Token: %s\n", token);
             token = strtok(NULL, "\r\n");
         }
 
