@@ -13,67 +13,75 @@
 
 #define BUFFER_SIZE 4097
 
-void put(uint8_t *buffer, int length, int clientSock, char *file)
+void put(int length, int clientSock, char *file)
 {
-    printf("GOT INTO PUt\n");
-    printf("This is the file: %s", file);
-    /*uint8_t readFile[length];
-    if (buffer.length < 4097)
+    //open the file or create it if it doesnt exist
+    int op = open(file, O_WRONLY | O_CREAT);
+    //check if you have access to opening and writing to the file
+    if (errno == EACCES)
     {
-        write
+        dprintf(clientSock, "HTTP/1.1 403 File Forbidden\r\n");
     }
-    size_t rd = read(op, readFile, length);
-    if (rd != 0)
+    //create a buffer to store the incoming data with the content length as the length of the buffer
+    uint8_t fileRecieved[length];
+    recv(clientSock, fileRecieved, length, 0);
+
+    //write the data to the file from the buffer and print a created code
+    size_t w = write(op, fileRecieved, length);
+    if (w == 0)
     {
-        if (rd == 10)
-        {
-            //need to figure out how to not print out again with the last buffer space
-            int w = write(STDOUT_FILENO, rdBuf, 10);
-            size_t keepRead = read(op, rdBuf, 10);
-            while (keepRead == 10 && w == 10)
-            {
-                w = write(STDOUT_FILENO, rdBuf, 10);
-                keepRead = read(op, rdBuf, 10);
-            }
-            if (keepRead < 10 && keepRead > 0)
-            {
-                w = write(STDOUT_FILENO, rdBuf, keepRead);
-            }
-            //printf("\n");
-        }
-        else
-        {
-            int w = write(STDOUT_FILENO, rdBuf, rd);
-            if (w < 0)
-            {
-            }
-        }
-    }*/
+    }
     dprintf(clientSock, "HTTP/1.1 201 CREATED\r\nContent-Length: 0\r\n\r\n");
+    close(op);
 }
 
 void get(int clientSock, char *file)
 {
-    printf("This is the file: %s", file);
+    //open the file to only read and then create a buffer to store the data in
     int op = open(file, O_RDONLY);
     uint8_t rd[1000];
     if (op >= 0)
     {
-        printf("GOT INTO GET\n");
+        //this is to find the file size so we can print the ok message before continually reading and writing
+        struct stat st;
+        stat(file, &st);
+        //this is to get the file size to send the ok message if everything is ok
+        size_t fileSize = st.st_size;
         size_t reading = read(op, rd, 1000);
+        //send the response first then send the data after
+        dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
+        //check that it read some bytes so we can start sending them over to the client
         if (reading != 0)
         {
+            //if the buffer is full then you want to send it and then keep reading and writing the data
             if (reading == 1000)
             {
+                //write the data in the buffer first to the client then keep reading and writing in a loop
+                size_t w = send(clientSock, rd, reading, 1000);
+                size_t keepRead = read(op, rd, 1000);
+                while (keepRead == 1000 && w == 1000)
+                {
+                    w = send(clientSock, rd, reading, 1000);
+                    keepRead = read(op, rd, 1000);
+                }
+                // once the buffer is no longer full which means that this should be the last time we send
+                if (keepRead < 1000 && keepRead > 0)
+                {
+                    w = send(clientSock, rd, reading, 1000);
+                }
             }
             else
             {
+                //if the buffer is not full after the first read
                 size_t sending = send(clientSock, rd, reading, 0);
+                if (sending == 0)
+                {
+                }
             }
         }
-
-        dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", reading);
+        close(op);
     }
+    //this is all error checking to make sure that the file is found and not forbidden etc
     else
     {
         int err = errno;
@@ -94,17 +102,37 @@ void get(int clientSock, char *file)
 
 void head(int clientSock, char *file)
 {
-    printf("GOT INTO HEAD\n");
-    dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
+    //bascially same exact thing as put but just dont send data we just need the file size and to make sure that we can access the file
+    int op = open(file, O_RDONLY);
+
+    if (op >= 0)
+    {
+        struct stat st;
+        stat(file, &st);
+        size_t fileSize = st.st_size;
+
+        dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
+        close(op);
+    }
+    else
+    {
+        int err = errno;
+        if (err == ENOENT)
+        {
+            dprintf(clientSock, "HTTP/1.1 404 File Not Found\r\n");
+        }
+        else if (err == EACCES)
+        {
+            dprintf(clientSock, "HTTP/1.1 403 File Forbidden\r\n");
+        }
+        else
+        {
+            dprintf(clientSock, "HTTP/1.1 500 Internal Server Error\r\n");
+        }
+    }
 }
 
-int parse(uint8_t *buffer)
-{
-    //return a number if i can get the content length
-    // if not then
-}
-
-int main(int argc, char **argv)
+int main()
 {
     /*
         Create sockaddr_in with server information
@@ -159,12 +187,13 @@ int main(int argc, char **argv)
     struct sockaddr client_addr;
     socklen_t client_addrlen;
 
+    //these are to take in the arguments from the request that the client sends us like function name and conten length etc
     char func[5];
     int conLen = 0;
-    char preLen[20];
     char *token;
     char fileName[50];
 
+    // we want the server to keep running until the user decides to shut it down
     while (1)
     {
         printf("[+] server is waiting...\n");
@@ -172,11 +201,13 @@ int main(int argc, char **argv)
         int client_sockd = accept(server_sockd, &client_addr, &client_addrlen);
         // Remember errors happen
 
-        uint8_t buff[BUFFER_SIZE + 1];
+        char buff[BUFFER_SIZE + 1];
         ssize_t bytes = recv(client_sockd, buff, BUFFER_SIZE, 0);
         buff[bytes] = 0; // null terminate
 
         //parsing algorithm
+        //first we want to delimit each part of the request by the \r\n to get each header, this will give us the first header
+        // the first header contains the function name and the filename which we need
         token = strtok(buff, "\r\n");
         sscanf(token, "%s %s ", func, fileName);
         //checks if first character is a / or not
@@ -184,8 +215,6 @@ int main(int argc, char **argv)
         {
             memmove(fileName, fileName + 1, strlen(fileName));
         }
-        printf("This is filenme: %s\n", fileName);
-        printf("also this is fiirst char: %c", fileName[0]);
         //check if filename violates any of the rules
         // first check the size make sure it is less than or equal to 27 characters
 
@@ -211,13 +240,12 @@ int main(int argc, char **argv)
         char header1[40];
         char header2[40];
         // this tokenizes each part of the buffer by \r\n to seperate headers
-        // make sure that each header follows the right conventions or else throw an erroor
+        // make sure that each header follows the right conventions or else throw an error
         while (token != NULL)
         {
             // this is to check if it is giving content length in request
             if (sscanf(token, "Content-Length: %d", &conLen) > 0)
             {
-                printf("This is content length: %d\n", conLen);
             }
             // this is checking if its a normal header and if it is we just ignore it
             else if (sscanf(token, "%s %s", header1, header2) == 2)
@@ -233,19 +261,15 @@ int main(int argc, char **argv)
             {
                 dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
             }
-            printf("Token: %s\n", token);
             token = strtok(NULL, "\r\n");
         }
 
         printf("[+] received %ld bytes from client\n[+] response: ", bytes);
         //sscanf(buff, "%s ", func);
 
-        printf("THIS IS BUFF: %s\n", buff);
         write(STDOUT_FILENO, buff, bytes);
-        printf("\n");
-        printf("THIS IS THE FUNCTION: %s\n", func);
-        //sscanf(buff, " %s %d", preLen, &conLen);
 
+        // once we parse through the headers we use the arguments that we made and we can go into one of these three functions
         if (strcmp(func, "HEAD") == 0)
         {
             head(client_sockd, fileName);
@@ -257,14 +281,13 @@ int main(int argc, char **argv)
 
             //there might be an error here since we are not checking if the words before the content length is exactly content length
             // i think well be fine because of the sscanf which has that string in the formating
-            put(buff, conLen, client_sockd, fileName);
+            put(conLen, client_sockd, fileName);
             close(client_sockd);
         }
         else if (strcmp(func, "GET") == 0)
         {
             get(client_sockd, fileName);
             close(client_sockd);
-            //dprintf(client_sockd, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
         }
         else
         {
