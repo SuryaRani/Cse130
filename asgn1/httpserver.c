@@ -20,7 +20,7 @@ void put(int length, int clientSock, char *file)
     //check if you have access to opening and writing to the file
     if (errno == EACCES)
     {
-        dprintf(clientSock, "HTTP/1.1 403 File Forbidden\r\n");
+        dprintf(clientSock, "HTTP/1.1 403 Forbidden\r\n");
     }
     //create a buffer to store the incoming data with the content length as the length of the buffer
     uint8_t fileRecieved[length];
@@ -57,17 +57,17 @@ void get(int clientSock, char *file)
             if (reading == 1000)
             {
                 //write the data in the buffer first to the client then keep reading and writing in a loop
-                size_t w = send(clientSock, rd, reading, 1000);
+                size_t w = send(clientSock, rd, reading, 0);
                 size_t keepRead = read(op, rd, 1000);
                 while (keepRead == 1000 && w == 1000)
                 {
-                    w = send(clientSock, rd, reading, 1000);
+                    w = send(clientSock, rd, keepRead, 0);
                     keepRead = read(op, rd, 1000);
                 }
                 // once the buffer is no longer full which means that this should be the last time we send
                 if (keepRead < 1000 && keepRead > 0)
                 {
-                    w = send(clientSock, rd, reading, 1000);
+                    w = send(clientSock, rd, keepRead, 0);
                 }
             }
             else
@@ -91,7 +91,7 @@ void get(int clientSock, char *file)
         }
         else if (err == EACCES)
         {
-            dprintf(clientSock, "HTTP/1.1 403 File Forbidden\r\n");
+            dprintf(clientSock, "HTTP/1.1 403 Forbidden\r\n");
         }
         else
         {
@@ -123,7 +123,7 @@ void head(int clientSock, char *file)
         }
         else if (err == EACCES)
         {
-            dprintf(clientSock, "HTTP/1.1 403 File Forbidden\r\n");
+            dprintf(clientSock, "HTTP/1.1 403 Forbidden\r\n");
         }
         else
         {
@@ -215,12 +215,18 @@ int main()
         {
             memmove(fileName, fileName + 1, strlen(fileName));
         }
+        else
+        {
+            dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+            close(client_sockd);
+        }
         //check if filename violates any of the rules
         // first check the size make sure it is less than or equal to 27 characters
 
         if (strlen(fileName) > 27)
         {
-            dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+            //i think i might have to change the response for errors to only have one \r\n instead of two and then close
+            dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n");
             //printf("in filename siz\n");
             close(client_sockd);
         }
