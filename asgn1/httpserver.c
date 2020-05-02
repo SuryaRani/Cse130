@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define BUFFER_SIZE 4097
+#define BUFFER_SIZE 500
 
 void put(int length, int clientSock, char *file)
 {
