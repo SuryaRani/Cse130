@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define BUFFER_SIZE 500
+#define BUFFER_SIZE 4097
 
 void put(int length, int clientSock, char *file)
 {
@@ -20,7 +20,7 @@ void put(int length, int clientSock, char *file)
     //check if you have access to opening and writing to the file
     if (errno == EACCES)
     {
-        dprintf(clientSock, "403 Forbidden HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+        dprintf(clientSock, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n");
         close(clientSock);
     }
     else
@@ -34,7 +34,7 @@ void put(int length, int clientSock, char *file)
         if (w == 0)
         {
         }
-        dprintf(clientSock, "201 Created HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+        dprintf(clientSock, "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n");
     }
 }
 
@@ -52,7 +52,7 @@ void get(int clientSock, char *file)
         size_t fileSize = st.st_size;
         size_t reading = read(op, rd, 1000);
         //send the response first then send the data after
-        dprintf(clientSock, "200 OK HTTP/1.1\r\nContent-Length: %ld\r\n\r\n", fileSize);
+        dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         //check that it read some bytes so we can start sending them over to the client
         if (reading != 0)
         {
@@ -66,6 +66,7 @@ void get(int clientSock, char *file)
                 {
                     w = send(clientSock, rd, keepRead, 0);
                     keepRead = read(op, rd, 1000);
+                    printf("IS this infinite loop prob not\n");
                 }
                 // once the buffer is no longer full which means that this should be the last time we send
                 if (keepRead < 1000 && keepRead > 0)
@@ -89,15 +90,15 @@ void get(int clientSock, char *file)
         int err = errno;
         if (err == ENOENT)
         {
-            dprintf(clientSock, "404 File Not Found HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+            dprintf(clientSock, "HTTP/1.1 404 File Not Found\r\nContent-Length: 0\r\n\r\n");
         }
         else if (err == EACCES)
         {
-            dprintf(clientSock, "403 Forbidden HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+            dprintf(clientSock, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n");
         }
         else
         {
-            dprintf(clientSock, "HTTP/1.1 500 Internal Server Error\r\n");
+            dprintf(clientSock, "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n");
         }
     }
 }
@@ -120,15 +121,15 @@ void head(int clientSock, char *file)
         int err = errno;
         if (err == ENOENT)
         {
-            dprintf(clientSock, "404 File Not Found HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+            dprintf(clientSock, "HTTP/1.1 404 File Not Found\r\nContent-Length: 0\r\n\r\n");
         }
         else if (err == EACCES)
         {
-            dprintf(clientSock, "403 Forbidden HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+            dprintf(clientSock, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n");
         }
         else
         {
-            dprintf(clientSock, "500 Internal Server Error HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+            dprintf(clientSock, "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n");
         }
     }
 }
@@ -218,7 +219,7 @@ int main()
         }
         else
         {
-            dprintf(clientSock, "400 Bad Request HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+            dprintf(client_sockd, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
             close(client_sockd);
         }
         //check if filename violates any of the rules
@@ -227,7 +228,7 @@ int main()
         if (strlen(fileName) > 27)
         {
             //i think i might have to change the response for errors to only have one \r\n instead of two and then close
-            dprintf(clientSock, "400 Bad Request HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+            dprintf(client_sockd, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
             //printf("in filename siz\n");
             close(client_sockd);
         }
@@ -237,7 +238,7 @@ int main()
         {
             if (!((isalpha(fileName[i])) != 0 || (isdigit(fileName[i]) != 0) || fileName[i] == '-' || fileName[i] == '_'))
             {
-                dprintf(clientSock, "400 Bad Request HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+                dprintf(client_sockd, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
                 //printf("IN Alpha num\n");
                 close(client_sockd);
                 break;
@@ -260,7 +261,7 @@ int main()
             {
                 if (header1[strlen(header1) - 1] != ':')
                 {
-                    dprintf(clientSock, "400 Bad Request HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+                    dprintf(client_sockd, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
                     close(client_sockd);
                 }
             }
@@ -268,7 +269,7 @@ int main()
             // we must read the data after if it is a put
             else
             {
-                dprintf(clientSock, "400 Bad Request HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+                dprintf(client_sockd, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
                 close(client_sockd);
             }
             token = strtok(NULL, "\r\n");
@@ -301,7 +302,7 @@ int main()
         }
         else
         {
-            dprintf(clientSock, "400 Bad Request HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+            dprintf(client_sockd, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
             close(client_sockd);
         }
     }
