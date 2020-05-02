@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define BUFFER_SIZE 500
+#define BUFFER_SIZE 4097
 
 void put(int length, int clientSock, char *file)
 {
@@ -52,7 +52,11 @@ void get(int clientSock, char *file)
         size_t fileSize = st.st_size;
         size_t reading = read(op, rd, 1000);
         //send the response first then send the data after
-        dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
+        //create string to send
+        char okMesg[1000];
+        sprintf(okMesg, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
+        //dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
+        send(clientSock, okMesg, strlen(okMesg), 0);
         //check that it read some bytes so we can start sending them over to the client
         if (reading != 0)
         {
