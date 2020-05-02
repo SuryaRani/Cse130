@@ -16,23 +16,26 @@
 void put(int length, int clientSock, char *file)
 {
     //open the file or create it if it doesnt exist
-    int op = open(file, O_WRONLY | O_CREAT);
+    int op = open(file, O_WRONLY | O_CREAT | O_TRUNC);
     //check if you have access to opening and writing to the file
     if (errno == EACCES)
     {
         dprintf(clientSock, "HTTP/1.1 403 Forbidden\r\n");
+        close(clientSock);
     }
-    //create a buffer to store the incoming data with the content length as the length of the buffer
-    uint8_t fileRecieved[length];
-    recv(clientSock, fileRecieved, length, 0);
-
-    //write the data to the file from the buffer and print a created code
-    size_t w = write(op, fileRecieved, length);
-    if (w == 0)
+    else
     {
+        //create a buffer to store the incoming data with the content length as the length of the buffer
+        uint8_t fileRecieved[length];
+        recv(clientSock, fileRecieved, length, 0);
+
+        //write the data to the file from the buffer and print a created code
+        size_t w = write(op, fileRecieved, length);
+        if (w == 0)
+        {
+        }
+        dprintf(clientSock, "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n");
     }
-    dprintf(clientSock, "HTTP/1.1 201 CREATED\r\nContent-Length: 0\r\n\r\n");
-    close(op);
 }
 
 void get(int clientSock, char *file)
@@ -79,7 +82,6 @@ void get(int clientSock, char *file)
                 }
             }
         }
-        close(op);
     }
     //this is all error checking to make sure that the file is found and not forbidden etc
     else
@@ -112,7 +114,6 @@ void head(int clientSock, char *file)
         size_t fileSize = st.st_size;
 
         dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
-        close(op);
     }
     else
     {
@@ -239,6 +240,7 @@ int main()
                 dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
                 //printf("IN Alpha num\n");
                 close(client_sockd);
+                break;
             }
         }
         //to move onto the next token
@@ -259,6 +261,7 @@ int main()
                 if (header1[strlen(header1) - 1] != ':')
                 {
                     dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+                    close(client_sockd);
                 }
             }
             // if it contains another \r\n in the string that means its the end of the request and might have data after it
@@ -266,6 +269,7 @@ int main()
             else
             {
                 dprintf(client_sockd, "HTTP/1.1 400 BAD REQUEST\r\n\r\n");
+                close(client_sockd);
             }
             token = strtok(NULL, "\r\n");
         }
