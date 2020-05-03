@@ -18,15 +18,24 @@ const char forbiddenMesg[] = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\
 const char createdMesg[] = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n";
 const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
 
+//todo:make sure that port number is above 1024
+// make sure that all edge cases are coverd
+// test 403 a bit more
+// think of any other ways that could break your program like a larger file or something
+// check for a request that might be greater than 4kb
+
 void put(int length, int clientSock, char *file)
 {
     //open the file or create it if it doesnt exist
     int op = open(file, O_WRONLY | O_CREAT | O_TRUNC);
     //check if you have access to opening and writing to the file
-    if (errno == EACCES)
+    if (op < 0)
     {
-        send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
-        close(clientSock);
+        if (errno = EACCES)
+        {
+            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+            close(clientSock);
+        }
     }
     else
     {
@@ -214,7 +223,7 @@ int main(int argc, char *argv[])
 
     //these are to take in the arguments from the request that the client sends us like function name and conten length etc
     char func[5];
-    int conLen = 0;
+    long conLen = 0;
     char *token;
     char fileName[50];
 
@@ -276,7 +285,7 @@ int main(int argc, char *argv[])
         while (token != NULL)
         {
             // this is to check if it is giving content length in request
-            if (sscanf(token, "Content-Length: %d", &conLen) > 0)
+            if (sscanf(token, "Content-Length: %ld", &conLen) > 0)
             {
             }
             // this is checking if its a normal header and if it is we just ignore it
