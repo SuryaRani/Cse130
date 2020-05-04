@@ -11,43 +11,63 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define BUFFER_SIZE 4097
+#define BUFFER_SIZE 4096
 const char badMesg[] = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
 const char notFoundMesg[] = "HTTP/1.1 404 File Not Found\r\nContent-Length: 0\r\n\r\n";
 const char forbiddenMesg[] = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
 const char createdMesg[] = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n";
 const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
 
-//todo:make sure that port number is above 1024
 // make sure that all edge cases are coverd
 // test 403 a bit more
 // think of any other ways that could break your program like a larger file or something
 // check for a request that might be greater than 4kb
 
-void put(int length, int clientSock, char *file)
+void put(long length, int clientSock, char *file) //, char *buffer, char *maybeData)
 {
     //open the file or create it if it doesnt exist
     int op = open(file, O_WRONLY | O_CREAT | O_TRUNC);
     //check if you have access to opening and writing to the file
     if (op < 0)
     {
-        if (errno = EACCES)
+        struct stat st;
+        int result = stat(file, &st);
+        if (result < 0)
         {
-            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
-            close(clientSock);
+            if (errno = EACCES)
+            {
+                send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+                close(clientSock);
+            }
         }
     }
     else
     {
         //create a buffer to store the incoming data with the content length as the length of the buffer
         uint8_t fileRecieved[length];
+        //size_t w = 0;
+        /*if (maybeData != NULL)
+        {
+            printf("in here");
+            write(op, fileRecieved, strlen(maybeData));
+            recv(clientSock, fileRecieved, length - strlen(maybeData), 0);
+            write(op, fileRecieved, length - strlen(maybeData));
+        }
+        else
+        {*/
+        printf("do i ever get here");
+        //char *tok = strtok(buffer, "\r\n\r\n");
+        //printf("TOK = %s\n", tok);
+        //long data;
         recv(clientSock, fileRecieved, length, 0);
+        //printf("THIS IS RECIEVE BYTES: %ld", r);
 
         //write the data to the file from the buffer and print a created code
-        size_t w = write(op, fileRecieved, length);
+        ssize_t w = write(op, fileRecieved, length);
         if (w == 0)
         {
         }
+        //}
         send(clientSock, createdMesg, strlen(createdMesg), 0);
     }
 }
@@ -71,7 +91,6 @@ void get(int clientSock, char *file)
         sprintf(okMesg, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         //dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         send(clientSock, okMesg, strlen(okMesg), 0);
-        printf("LEngth of the messag: %ld\n", strlen(okMesg));
         //check that it read some bytes so we can start sending them over to the client
         if (reading != 0)
         {
@@ -106,18 +125,23 @@ void get(int clientSock, char *file)
     //this is all error checking to make sure that the file is found and not forbidden etc
     else
     {
-        int err = errno;
-        if (err == ENOENT)
+        struct stat st;
+        int result = stat(file, &st);
+        if (result < 0)
         {
-            send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
-        }
-        else if (err == EACCES)
-        {
-            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
-        }
-        else
-        {
-            send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
+            int err = errno;
+            if (err == ENOENT)
+            {
+                send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
+            }
+            else if (err == EACCES)
+            {
+                send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+            }
+            else
+            {
+                send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
+            }
         }
     }
 }
@@ -137,18 +161,23 @@ void head(int clientSock, char *file)
     }
     else
     {
-        int err = errno;
-        if (err == ENOENT)
+        struct stat st;
+        int result = stat(file, &st);
+        if (result < 0)
         {
-            send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
-        }
-        else if (err == EACCES)
-        {
-            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
-        }
-        else
-        {
-            send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
+            int err = errno;
+            if (err == ENOENT)
+            {
+                send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
+            }
+            else if (err == EACCES)
+            {
+                send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+            }
+            else
+            {
+                send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
+            }
         }
     }
 }
@@ -172,6 +201,12 @@ int main(int argc, char *argv[])
         return 0;
     }*/
     char *port = argv[1];
+
+    if (atoi(port) <= 1024)
+    {
+        dprintf(STDERR_FILENO, "Port number must be above 1024\n");
+        return 0;
+    }
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -226,6 +261,7 @@ int main(int argc, char *argv[])
     long conLen = 0;
     char *token;
     char fileName[50];
+    char serverVersion[20];
 
     // we want the server to keep running until the user decides to shut it down
     while (1)
@@ -238,13 +274,25 @@ int main(int argc, char *argv[])
         char buff[BUFFER_SIZE + 1];
         ssize_t bytes = recv(client_sockd, buff, BUFFER_SIZE, 0);
         buff[bytes] = 0; // null terminate
+        //creating a copy of the request to be able to check if their is data at the end that i need to read to be able to put
+        //char buffCopy[BUFFER_SIZE + 1];
+        //strcpy(buffCopy, buff);
+        //char *truncBuff = strtok(buff, "\r\n\r\n");
 
+        //char *newTok = strtok(buffCopy, "\r\n\r\n");
+        //newTok = strtok(NULL, "\r\n\r\n");
+        //printf("This is new tok: %s\n", newTok);
         //parsing algorithm
         //first we want to delimit each part of the request by the \r\n to get each header, this will give us the first header
         // the first header contains the function name and the filename which we need
         token = strtok(buff, "\r\n");
-        sscanf(token, "%s %s ", func, fileName);
+        sscanf(token, "%s %s %s", func, fileName, serverVersion);
         //checks if first character is a / or not
+        if (strcmp(serverVersion, "HTTP/1.1") != 0)
+        {
+            send(client_sockd, badMesg, strlen(badMesg), 0);
+            close(client_sockd);
+        }
         if (fileName[0] == '/')
         {
             memmove(fileName, fileName + 1, strlen(fileName));
@@ -324,7 +372,7 @@ int main(int argc, char *argv[])
 
             //there might be an error here since we are not checking if the words before the content length is exactly content length
             // i think well be fine because of the sscanf which has that string in the formating
-            put(conLen, client_sockd, fileName);
+            put(conLen, client_sockd, fileName); //, buffCopy, newTok);
             close(client_sockd);
         }
         else if (strcmp(func, "GET") == 0)
