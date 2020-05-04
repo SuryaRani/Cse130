@@ -59,14 +59,21 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
         //char *tok = strtok(buffer, "\r\n\r\n");
         //printf("TOK = %s\n", tok);
         //long data;
-        recv(clientSock, fileRecieved, length, 0);
+        long var = 0;
+        ssize_t r = recv(clientSock, fileRecieved, length, 0);
+        var += r;
+        ssize_t w = write(op, fileRecieved, r);
+        while (var != length)
+        {
+            r = recv(clientSock, fileRecieved, length, 0);
+            var += r;
+            w = write(op, fileRecieved, r);
+        }
         //printf("THIS IS RECIEVE BYTES: %ld", r);
 
         //write the data to the file from the buffer and print a created code
-        ssize_t w = write(op, fileRecieved, length);
-        if (w == 0)
-        {
-        }
+        //ssize_t w = write(op, fileRecieved, length);
+
         //}
         send(clientSock, createdMesg, strlen(createdMesg), 0);
     }
