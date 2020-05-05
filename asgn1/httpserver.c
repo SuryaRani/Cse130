@@ -25,6 +25,18 @@ const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-
 
 void put(long length, int clientSock, char *file) //, char *buffer, char *maybeData)
 {
+    //check if we have write permissions for file
+    struct stat st;
+    int result = stat(file, &st);
+    if (result < 0)
+    {
+        if ((st.st_mode & S_IWUSR) == 0)
+        {
+            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+
+            return;
+        }
+    }
     //open the file or create it if it doesnt exist
     int op = open(file, O_WRONLY | O_CREAT | O_TRUNC);
     //check if you have access to opening and writing to the file
@@ -81,6 +93,18 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
 
 void get(int clientSock, char *file)
 {
+    //check if we have read permissions for file
+    struct stat st;
+    int result = stat(file, &st);
+    if (result < 0)
+    {
+        if ((st.st_mode & S_IRUSR) == 0)
+        {
+            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+
+            return;
+        }
+    }
     //open the file to only read and then create a buffer to store the data in
     int op = open(file, O_RDONLY);
     uint8_t rd[1000];
@@ -132,8 +156,6 @@ void get(int clientSock, char *file)
     //this is all error checking to make sure that the file is found and not forbidden etc
     else
     {
-        struct stat st;
-        int result = stat(file, &st);
         if (result < 0)
         {
             int err = errno;
@@ -155,6 +177,18 @@ void get(int clientSock, char *file)
 
 void head(int clientSock, char *file)
 {
+    //check if we have read permissions for file
+    struct stat st;
+    int result = stat(file, &st);
+    if (result < 0)
+    {
+        if ((st.st_mode & S_IRUSR) == 0)
+        {
+            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+
+            return;
+        }
+    }
     //bascially same exact thing as put but just dont send data we just need the file size and to make sure that we can access the file
     int op = open(file, O_RDONLY);
 
