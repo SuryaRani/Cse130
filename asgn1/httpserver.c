@@ -42,16 +42,6 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
     //check if you have access to opening and writing to the file
     if (op < 0)
     {
-        struct stat st;
-        int result = stat(file, &st);
-        if (result < 0)
-        {
-            if (errno = EACCES)
-            {
-                send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
-                close(clientSock);
-            }
-        }
     }
     else
     {
@@ -80,6 +70,9 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
             r = recv(clientSock, fileRecieved, length, 0);
             var += r;
             w = write(op, fileRecieved, r);
+        }
+        if (w == 0)
+        {
         }
         //printf("THIS IS RECIEVE BYTES: %ld", r);
 
@@ -156,21 +149,18 @@ void get(int clientSock, char *file)
     //this is all error checking to make sure that the file is found and not forbidden etc
     else
     {
-        if (result < 0)
+        int err = errno;
+        if (err == ENOENT)
         {
-            int err = errno;
-            if (err == ENOENT)
-            {
-                send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
-            }
-            else if (err == EACCES)
-            {
-                send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
-            }
-            else
-            {
-                send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
-            }
+            send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
+        }
+        else if (err == EACCES)
+        {
+            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+        }
+        else
+        {
+            send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
         }
     }
 }
@@ -202,23 +192,18 @@ void head(int clientSock, char *file)
     }
     else
     {
-        struct stat st;
-        int result = stat(file, &st);
-        if (result < 0)
+        int err = errno;
+        if (err == ENOENT)
         {
-            int err = errno;
-            if (err == ENOENT)
-            {
-                send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
-            }
-            else if (err == EACCES)
-            {
-                send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
-            }
-            else
-            {
-                send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
-            }
+            send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
+        }
+        else if (err == EACCES)
+        {
+            send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+        }
+        else
+        {
+            send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
         }
     }
 }
