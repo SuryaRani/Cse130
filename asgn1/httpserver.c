@@ -18,11 +18,6 @@ const char forbiddenMesg[] = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\
 const char createdMesg[] = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n";
 const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
 
-// make sure that all edge cases are coverd
-// test 403 a bit more
-// think of any other ways that could break your program like a larger file or something
-// check for a request that might be greater than 4kb
-
 void put(long length, int clientSock, char *file) //, char *buffer, char *maybeData)
 {
     //check if we have write permissions for file
@@ -42,6 +37,7 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
     //check if you have access to opening and writing to the file
     if (op < 0)
     {
+        send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
     }
     else
     {
