@@ -28,7 +28,7 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
     //check if we have write permissions for file
     struct stat st;
     int result = stat(file, &st);
-    if (result < 0)
+    if (result == 0)
     {
         if ((st.st_mode & S_IWUSR) == 0)
         {
@@ -87,11 +87,11 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
 void get(int clientSock, char *file)
 {
     //check if we have read permissions for file
-    struct stat st;
-    int result = stat(file, &st);
-    if (result < 0)
+    struct stat sta;
+    int result = stat(file, &sta);
+    if (result == 0)
     {
-        if ((st.st_mode & S_IRUSR) == 0)
+        if ((sta.st_mode & S_IRUSR) == 0)
         {
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
 
@@ -168,11 +168,11 @@ void get(int clientSock, char *file)
 void head(int clientSock, char *file)
 {
     //check if we have read permissions for file
-    struct stat st;
-    int result = stat(file, &st);
-    if (result < 0)
+    struct stat sta;
+    int result = stat(file, &sta);
+    if (result == 0)
     {
-        if ((st.st_mode & S_IRUSR) == 0)
+        if ((sta.st_mode & S_IRUSR) == 0)
         {
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
 
