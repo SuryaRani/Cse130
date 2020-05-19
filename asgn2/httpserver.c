@@ -28,6 +28,9 @@ typedef struct workerThreadArgs
     pthread_t workId;
     int clientSock;
     pthread_cond_t cond;
+    int logFile;
+    ssize_t *offset;
+    //char *message;
     //circularArray queue;
 } workerThread;
 
@@ -40,6 +43,8 @@ int q[1000];
 ssize_t qSize;
 int front;
 int tail;
+int fails = 0;
+int trials = 0;
 
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 
@@ -49,18 +54,20 @@ const char forbiddenMesg[] = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\
 const char createdMesg[] = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n";
 const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
 
-void put(long length, int clientSock, char *file) //, char *buffer, char *maybeData)
+char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, char *maybeData)
 {
     //check if we have write permissions for file
     struct stat st;
     int result = stat(file, &st);
+    //char msg[15000];
     if (result == 0)
     {
         if ((st.st_mode & S_IWUSR) == 0)
         {
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
-
-            return;
+            fails++;
+            sprintf(msg, "FAIL: PUT /%s HTTP/1.1 --- response 403\n========\n", file);
+            return msg;
         }
     }
     //open the file or create it if it doesnt exist
@@ -69,6 +76,10 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
     if (op < 0)
     {
         send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
+        fails++;
+
+        sprintf(msg, "FAIL: PUT /%s HTTP/1.1 --- response 500\n========\n", file);
+        return msg;
     }
     else
     {
@@ -101,6 +112,7 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
         if (w == 0)
         {
         }
+
         //printf("THIS IS RECIEVE BYTES: %ld", r);
 
         //write the data to the file from the buffer and print a created code
@@ -108,21 +120,33 @@ void put(long length, int clientSock, char *file) //, char *buffer, char *maybeD
 
         //}
         send(clientSock, createdMesg, strlen(createdMesg), 0);
+        printf("SHOULD IT BE  A MSG: %s\nThis is the size: %X\n", fileRecieved, sizeof(fileRecieved) / sizeof(uint8_t));
+        printf("THIS HAS TO BE MSG\n");
+        for (int i = 0; i <= length; i++)
+        {
+            printf("%c", fileRecieved[i]);
+        }
+
+        sprintf(msg, "PUT /%s length %ld\n%s========\n", file, length, (unsigned char *)fileRecieved);
+        return msg;
     }
 }
 
-void get(int clientSock, char *file)
+char *get(int clientSock, char *file, char *msg)
 {
     //check if we have read permissions for file
     struct stat sta;
     int result = stat(file, &sta);
+    //char msg[15000];
     if (result == 0)
     {
         if ((sta.st_mode & S_IRUSR) == 0)
         {
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+            fails++;
 
-            return;
+            sprintf(msg, "FAIL: GET /%s HTTP/1.1 --- response 403\n========\n", file);
+            return msg;
         }
     }
     //open the file to only read and then create a buffer to store the data in
@@ -136,9 +160,12 @@ void get(int clientSock, char *file)
         //this is to get the file size to send the ok message if everything is ok
         size_t fileSize = st.st_size;
         size_t reading = read(op, rd, 1000);
+
         //send the response first then send the data after
         //create string to send
         char okMesg[1000];
+        uint8_t dataRecv[fileSize];
+        int counter = 0;
         sprintf(okMesg, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         //dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         send(clientSock, okMesg, strlen(okMesg), 0);
@@ -149,29 +176,56 @@ void get(int clientSock, char *file)
             if (reading == 1000)
             {
                 //write the data in the buffer first to the client then keep reading and writing in a loop
+                //strcat(dataRecv, (unsigned char *)rd);
+                for (int i = 0; i < reading; i++)
+                {
+                    dataRecv[counter] = rd[i];
+                    counter++;
+                }
                 size_t w = send(clientSock, rd, reading, 0);
                 size_t keepRead = read(op, rd, 1000);
                 while (keepRead == 1000 && w == 1000)
                 {
+                    //strcat(dataRecv, rd);
+                    for (int i = 0; i < keepRead; i++)
+                    {
+                        dataRecv[counter] = rd[i];
+                        counter++;
+                    }
                     w = send(clientSock, rd, keepRead, 0);
                     keepRead = read(op, rd, 1000);
-                    printf("IS this infinite loop prob not\n");
+                    //printf("IS this infinite loop prob not\n");
                 }
                 // once the buffer is no longer full which means that this should be the last time we send
                 if (keepRead < 1000 && keepRead > 0)
                 {
+                    //strcat(dataRecv, rd);
+                    for (int i = 0; i < keepRead; i++)
+                    {
+                        dataRecv[counter] = rd[i];
+                        counter++;
+                    }
                     w = send(clientSock, rd, keepRead, 0);
                 }
             }
             else
             {
                 //if the buffer is not full after the first read
+                //strcat(dataRecv, rd);
+                for (int i = 0; i < reading; i++)
+                {
+                    dataRecv[counter] = rd[i];
+                    counter++;
+                }
                 size_t sending = send(clientSock, rd, reading, 0);
                 if (sending == 0)
                 {
                 }
             }
         }
+
+        sprintf(msg, "GET /%s length %ld\n%s========\n", file, fileSize, (unsigned char *)dataRecv);
+        return msg;
     }
     //this is all error checking to make sure that the file is found and not forbidden etc
     else
@@ -180,30 +234,42 @@ void get(int clientSock, char *file)
         if (err == ENOENT)
         {
             send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
+            fails++;
+            sprintf(msg, "FAIL: GET /%s HTTP/1.1 --- response 404\n", file);
+            return msg;
         }
         else if (err == EACCES)
         {
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+            fails++;
+            sprintf(msg, "FAIL: GET /%s HTTP/1.1 --- response 403\n", file);
+            return msg;
         }
         else
         {
             send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
+            fails++;
+            sprintf(msg, "FAIL: GET /%s HTTP/1.1 --- response 500\n", file);
+            return msg;
         }
     }
 }
 
-void head(int clientSock, char *file)
+char *head(int clientSock, char *file, char *msg)
 {
     //check if we have read permissions for file
     struct stat sta;
     int result = stat(file, &sta);
+    //char msg[15000];
     if (result == 0)
     {
         if ((sta.st_mode & S_IRUSR) == 0)
         {
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+            sprintf(msg, "FAIL: HEAD /%s HTTP/1.1 --- response 403\n", file);
+            fails++;
 
-            return;
+            return msg;
         }
     }
     //bascially same exact thing as put but just dont send data we just need the file size and to make sure that we can access the file
@@ -216,6 +282,8 @@ void head(int clientSock, char *file)
         size_t fileSize = st.st_size;
 
         dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
+        sprintf(msg, "HEAD /%s length %ld\n", file, fileSize);
+        return msg;
     }
     else
     {
@@ -223,25 +291,37 @@ void head(int clientSock, char *file)
         if (err == ENOENT)
         {
             send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
+            sprintf(msg, "FAIL: HEAD /%s HTTP/1.1 --- response 404\n", file);
+            fails++;
+
+            return msg;
         }
         else if (err == EACCES)
         {
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+            sprintf(msg, "FAIL: HEAD /%s HTTP/1.1 --- response 403\n", file);
+            fails++;
+
+            return msg;
         }
         else
         {
             send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
+            sprintf(msg, "FAIL: HEAD /%s HTTP/1.1 --- response 500\n", file);
+            fails++;
+
+            return msg;
         }
     }
 }
-void doServer(int client_sockd)
+char *doServer(int client_sockd, char *msg)
 {
     char func[5];
     long conLen = 0;
     char *token;
     char fileName[50];
     char serverVersion[20];
-
+    //char msg[15000];
     char buff[BUFFER_SIZE + 1];
     ssize_t bytes = recv(client_sockd, buff, BUFFER_SIZE, 0);
     buff[bytes] = 0; // null terminate
@@ -263,6 +343,9 @@ void doServer(int client_sockd)
     {
         send(client_sockd, badMesg, strlen(badMesg), 0);
         close(client_sockd);
+        sprintf(msg, "FAIL: /%s HTTP/1.1 --- response 400\n", fileName);
+        fails++;
+        return msg;
     }
     if (fileName[0] == '/')
     {
@@ -272,6 +355,9 @@ void doServer(int client_sockd)
     {
         send(client_sockd, badMesg, strlen(badMesg), 0);
         close(client_sockd);
+        sprintf(msg, "FAIL: /%s HTTP/1.1 --- response 400\n", fileName);
+        fails++;
+        return msg;
     }
     //check if filename violates any of the rules
     // first check the size make sure it is less than or equal to 27 characters
@@ -282,6 +368,9 @@ void doServer(int client_sockd)
         send(client_sockd, badMesg, strlen(badMesg), 0);
         //printf("in filename siz\n");
         close(client_sockd);
+        sprintf(msg, "FAIL: /%s HTTP/1.1 --- response 400\n", fileName);
+        fails++;
+        return msg;
     }
 
     //check if filename is alphanumeric or contains -, _
@@ -292,7 +381,9 @@ void doServer(int client_sockd)
             send(client_sockd, badMesg, strlen(badMesg), 0);
             //printf("IN Alpha num\n");
             close(client_sockd);
-            break;
+            sprintf(msg, "FAIL: /%s HTTP/1.1 --- response 400\n", fileName);
+            fails++;
+            return msg;
         }
     }
     //to move onto the next token
@@ -314,6 +405,9 @@ void doServer(int client_sockd)
             {
                 send(client_sockd, badMesg, strlen(badMesg), 0);
                 close(client_sockd);
+                sprintf(msg, "FAIL: /%s HTTP/1.1 --- response 400\n", fileName);
+                fails++;
+                return msg;
             }
         }
         // if it contains another \r\n in the string that means its the end of the request and might have data after it
@@ -322,6 +416,9 @@ void doServer(int client_sockd)
         {
             send(client_sockd, badMesg, strlen(badMesg), 0);
             close(client_sockd);
+            sprintf(msg, "FAIL: /%s HTTP/1.1 --- response 400\n", fileName);
+            fails++;
+            return msg;
         }
         token = strtok(NULL, "\r\n");
     }
@@ -334,7 +431,7 @@ void doServer(int client_sockd)
     // once we parse through the headers we use the arguments that we made and we can go into one of these three functions
     if (strcmp(func, "HEAD") == 0)
     {
-        head(client_sockd, fileName);
+        return head(client_sockd, fileName, msg);
         close(client_sockd);
         //dprintf(client_sockd, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
     }
@@ -343,32 +440,57 @@ void doServer(int client_sockd)
 
         //there might be an error here since we are not checking if the words before the content length is exactly content length
         // i think well be fine because of the sscanf which has that string in the formating
-        put(conLen, client_sockd, fileName); //, buffCopy, newTok);
+        return put(conLen, client_sockd, fileName, msg); //, buffCopy, newTok);
         close(client_sockd);
     }
     else if (strcmp(func, "GET") == 0)
     {
-        get(client_sockd, fileName);
+        return get(client_sockd, fileName, msg);
         close(client_sockd);
     }
     else
     {
         send(client_sockd, badMesg, strlen(badMesg), 0);
         close(client_sockd);
+        sprintf(msg, "FAIL: /%s HTTP/1.1 --- response 400\n", fileName);
+        fails++;
+        return msg;
     }
 }
+ssize_t findLen(char *msg)
+{
+    ssize_t len = 0;
+    while (msg[len] != 0)
+    {
+        len++;
+    }
+    return len;
+}
+char *sendLog(char *msg, int file)
+{
+    ssize_t len = findLen(msg);
+
+    printf("THIS IS The SIjZE OF MESSAGE with akdsfj %ld\n", len);
+    printf("THiS IS MESSAGE: %s\n", msg);
+    return msg;
+}
+
 void *work(void *obj)
 {
     workerThread *wrkr = (workerThread *)obj;
     printf("IN worker thread\n");
     int cSock;
+    // i think they will all be writing to msg and it will mess it up you probably need to let each one have their own buffer
+    //char msg[16000];
     while (1)
     {
         pthread_mutex_lock(&mut);
+        printf("Worker: [%d]\n", wrkr->id);
         while (wrkr->clientSock < 0)
         {
             pthread_cond_wait(&wrkr->cond, &mut);
         }
+        trials++;
         cSock = q[front];
         if (front == 999)
         {
@@ -378,13 +500,107 @@ void *work(void *obj)
         {
             front++;
         }
-        doServer(cSock);
+        char *msg = doServer(cSock, msg);
+
+        char a[100];
+        char b[16000];
+        char c[20];
+        char *firstPart = strtok(msg, "\n");
+        ssize_t sizeA = snprintf(a, 100, "%s\n", firstPart);
+
+        printf("THIS IS FIRST PART %s\n", firstPart);
+        char *secondPart = strtok(NULL, "\n");
+        int counter = 0;
+        char buff[3];
+        for (size_t idx = 0; idx < sizeof(secondPart) / sizeof(char); ++idx)
+        {
+            snprintf(buff, 3, "%02x", msg[idx]);
+            printf("%lu: %s\n", idx, buff);
+            for (int i = 0; i < 3; i++)
+            {
+                b[counter] = buff[i];
+                counter++;
+            }
+        }
+
+        ssize_t sizeB = (sizeof(secondPart) / sizeof(char)) * 3;
+        printf("THiS IS LENGTH OF B: %ld\n", sizeB);
+        ssize_t sizeC = snprintf(c, 20, "========\n");
+
+        printf("THIS IS Second PART %s\n", secondPart);
+        //char *firstPart = strtok(msg, "\n");
+        printf("THIS IS FIRST PART %s\n", firstPart);
+        ssize_t theCountSize = 0;
+        if (sizeB / 60 == 0 && sizeB % 60 > 0)
+        {
+            theCountSize++;
+        }
+        else if (sizeB / 60 > 0 && sizeB % 60 > 0)
+        {
+            theCountSize = (sizeB / 60) + 1;
+        }
+        else
+        {
+            theCountSize = (sizeB / 60);
+        }
+        theCountSize *= 9;
 
         //sleep(5);
         wrkr->clientSock = -1;
         printf("done with request\n");
+        ssize_t totalLen = sizeA + sizeC + sizeB; //+ theCountSize;
         //pthread_cond_signal(&wrkr->cond);
+        ssize_t oSet = *(wrkr->offset);
+        *(wrkr->offset) += totalLen;
+        char printHex[150];
+        int hexCount = 0;
+        int count = 0;
+        char keepPrinting[150];
+
         pthread_mutex_unlock(&mut);
+        if (wrkr->logFile != -1)
+        {
+            pwrite(wrkr->logFile, a, sizeA, oSet);
+            oSet += sizeA;
+            /*if (secondPart != NULL)
+            {
+                for (int j = 0; j < theCountSize / 9; j++)
+                {
+                    if (theCountSize > 0)
+                    {
+                        for (int i = 0; i < 60 && count < sizeB; i++)
+                        {
+                            printHex[i] = b[count];
+                            count++;
+                        }
+                        //This is not correct it will always try to read 69 bytes even when their is not 69 bytes i think
+                        ssize_t d = snprintf(keepPrinting, 69, "%08d %s", hexCount, printHex);
+                        hexCount += 20;
+                        pwrite(wrkr->logFile, keepPrinting, d, oSet);
+                        oSet += d;
+                    }
+                }*/
+
+            /*for (int i = 0; i < sizeB; i++)
+                {
+                    if (count != sizeB)
+                    {
+                        if (i % 20 == 0 && i != 0)
+                        {
+                            pwrite(wrkr->logFile, printHex, sizeB, oSet);
+                        }
+                        snprintf(printHex,"%08d %s"
+                        count+=20;
+                    }
+                }*/
+
+            //pwrite(wrkr->logFile, "\n", 1, oSet);
+            //}
+            pwrite(wrkr->logFile, b, sizeB, oSet);
+            oSet += sizeB;
+            pwrite(wrkr->logFile, c, sizeC, oSet);
+            oSet += sizeC;
+        }
     }
 }
 
@@ -425,7 +641,12 @@ int main(int argc, char *argv[])
     char *port = NULL;
     int numThreads = 4;
     char *logFile = NULL;
-
+    printf("THis is first arg: %s\n", argv[0]);
+    if (strcmp(argv[0], "./httpserver") != 0)
+    {
+        dprintf(STDERR_FILENO, "Include httpserver\n");
+        return EXIT_FAILURE;
+    }
     for (int i = 1; i < argc; i++)
     {
         if (atoi(argv[i]) != 0)
@@ -516,13 +737,20 @@ int main(int argc, char *argv[])
     //creating the threads
     workerThread workers[numThreads];
     int err = 0;
+    int fileName = -1;
+    ssize_t poffset = 0;
+    if (logFile != NULL)
+    {
+        fileName = open(logFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    }
     //circularArray q;
     for (int i = 0; i < numThreads; i++)
     {
         workers[i].id = i;
         workers[i].clientSock = -1;
+        workers[i].logFile = fileName;
         workers[i].cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-        //workers[i].queue = &q;
+        workers[i].offset = &poffset;
 
         err = pthread_create(&workers[i].workId, NULL, &work, &workers[i]);
         if (err)
