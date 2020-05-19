@@ -470,8 +470,8 @@ char *sendLog(char *msg, int file)
 {
     ssize_t len = findLen(msg);
 
-    printf("THIS IS The SIjZE OF MESSAGE with akdsfj %ld\n", len);
-    printf("THiS IS MESSAGE: %s\n", msg);
+    //printf("THIS IS The SIjZE OF MESSAGE with akdsfj %ld\n", len);
+    //printf("THiS IS MESSAGE: %s\n", msg);
     return msg;
 }
 
@@ -485,7 +485,7 @@ void makeHex(char *buff, char *mesg)
     for (int i = 0; i < size; i++)
     {
         snprintf(smallBuff, 19, " %02X", mesg[i]);
-        printf("THIS IS SMALL BUFF: %s\n", smallBuff);
+        //printf("THIS IS SMALL BUFF: %s\n", smallBuff);
         if (i % 20 == 0 && i != 0)
         {
             strcat(buff, "\n");
@@ -500,7 +500,7 @@ void makeHex(char *buff, char *mesg)
             strcat(buff, count);
         }
         strcat(buff, smallBuff);
-        printf("THIS IS BUFFER: %s\n", buff);
+        //printf("THIS IS BUFFER: %s\n", buff);
     }
     strcat(buff, "\n");
 }
@@ -530,10 +530,10 @@ void *work(void *obj)
         {
             front++;
         }
-        printf("DSKJFLASJIT MIGHT BE CuZ THIS\n");
+        //printf("DSKJFLASJIT MIGHT BE CuZ THIS\n");
 
         char *mesg = doServer(cSock, msg);
-        printf("DO I GET HERE IT MIGHT BE CuZ THIS\n");
+        //printf("DO I GET HERE IT MIGHT BE CuZ THIS\n");
 
         char a[100];
         char b[16000];
@@ -541,21 +541,21 @@ void *work(void *obj)
         char *firstPart = strtok(mesg, "\n");
         ssize_t sizeA = snprintf(a, 100, "%s\n", firstPart);
 
-        printf("THIS IS FIRST PART %s\n", firstPart);
+        //printf("THIS IS FIRST PART %s\n", firstPart);
         char *secondPart = strtok(NULL, "\n");
         int counting = 0;
         char buff[10];
         // char buff[16000];
 
-        printf("NOW THIS IS B: %s", b);
+        //printf("NOW THIS IS B: %s", b);
 
         ssize_t sizeB = (sizeof(secondPart) / sizeof(char));
-        printf("THiS IS LENGTH OF B: %ld\n", sizeB);
+        //printf("THiS IS LENGTH OF B: %ld\n", sizeB);
         ssize_t sizeC = snprintf(c, 20, "========\n");
 
-        printf("THIS IS Second PART %s\n", secondPart);
+        //printf("THIS IS Second PART %s\n", secondPart);
         //char *firstPart = strtok(msg, "\n");
-        printf("THIS IS FIRST PART %s\n", firstPart);
+        //printf("THIS IS FIRST PART %s\n", firstPart);
         ssize_t theCountSize = 0;
         if (sizeB / 60 == 0 && sizeB % 60 > 0)
         {
@@ -588,20 +588,20 @@ void *work(void *obj)
         int count = 0;
         char keepPrinting[150];
 
-        printf("WHY IS B CHANGED: %s", b);
+        //printf("WHY IS B CHANGED: %s", b);
 
         pthread_mutex_unlock(&mut);
         if (wrkr->logFile != -1)
         {
             pwrite(wrkr->logFile, a, sizeA, oSet);
             oSet += sizeA;
-            printf("DO I asdfjkljasdlfjjaldsf IN HERE\n");
+            //printf("DO I asdfjkljasdlfjjaldsf IN HERE\n");
 
             if (secondPart != NULL)
             {
-                printf("DO I GO IN HERE\n");
+                //printf("DO I GO IN HERE\n");
 
-                printf("This is B: %s\n", b);
+                //printf("This is B: %s\n", b);
 
                 pwrite(wrkr->logFile, b, sizeB, oSet);
                 oSet += sizeB;
@@ -619,6 +619,7 @@ int main(int argc, char *argv[])
     char *port = NULL;
     int numThreads = 4;
     char *logFile = NULL;
+    //
     printf("THis is first arg: %s\n", argv[0]);
     if (strcmp(argv[0], "./httpserver") != 0)
     {
@@ -746,7 +747,6 @@ int main(int argc, char *argv[])
     struct sockaddr client_addr;
     socklen_t client_addrlen;
 
-   
     // we want the server to keep running until the user decides to shut it down
     int counter = 0;
     int target = 0;
