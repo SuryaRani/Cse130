@@ -120,12 +120,8 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
 
         //}
         send(clientSock, createdMesg, strlen(createdMesg), 0);
-        printf("SHOULD IT BE  A MSG: %s\nThis is the size: %X\n", fileRecieved, sizeof(fileRecieved) / sizeof(uint8_t));
-        printf("THIS HAS TO BE MSG\n");
-        for (int i = 0; i <= length; i++)
-        {
-            printf("%c", fileRecieved[i]);
-        }
+        //printf("SHOULD IT BE  A MSG: %s\nThis is the size: %X\n", fileRecieved, sizeof(fileRecieved) / sizeof(uint8_t));
+        //printf("THIS HAS TO BE MSG\n")
 
         sprintf(msg, "PUT /%s length %ld\n%s========\n", file, length, (unsigned char *)fileRecieved);
         return msg;
@@ -468,7 +464,7 @@ ssize_t findLen(char *msg)
 }
 char *sendLog(char *msg, int file)
 {
-    ssize_t len = findLen(msg);
+    //ssize_t len = findLen(msg);
 
     //printf("THIS IS The SIjZE OF MESSAGE with akdsfj %ld\n", len);
     //printf("THiS IS MESSAGE: %s\n", msg);
@@ -543,8 +539,8 @@ void *work(void *obj)
 
         //printf("THIS IS FIRST PART %s\n", firstPart);
         char *secondPart = strtok(NULL, "\n");
-        int counting = 0;
-        char buff[10];
+        //int counting = 0;
+        //char buff[10];
         // char buff[16000];
 
         //printf("NOW THIS IS B: %s", b);
@@ -583,10 +579,10 @@ void *work(void *obj)
         //pthread_cond_signal(&wrkr->cond);
         ssize_t oSet = *(wrkr->offset);
         *(wrkr->offset) += totalLen;
-        char printHex[150];
-        int hexCount = 0;
-        int count = 0;
-        char keepPrinting[150];
+        //char printHex[150];
+        //int hexCount = 0;
+        //int count = 0;
+        // char keepPrinting[150];
 
         //printf("WHY IS B CHANGED: %s", b);
 
