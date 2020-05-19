@@ -481,7 +481,7 @@ void *work(void *obj)
     printf("IN worker thread\n");
     int cSock;
     // i think they will all be writing to msg and it will mess it up you probably need to let each one have their own buffer
-    //char msg[16000];
+    char msg[16000];
     while (1)
     {
         pthread_mutex_lock(&mut);
@@ -500,28 +500,36 @@ void *work(void *obj)
         {
             front++;
         }
-        char *msg = doServer(cSock, msg);
+        printf("DSKJFLASJIT MIGHT BE CuZ THIS\n");
+
+        char *mesg = doServer(cSock, msg);
+        printf("DO I GET HERE IT MIGHT BE CuZ THIS\n");
 
         char a[100];
         char b[16000];
         char c[20];
-        char *firstPart = strtok(msg, "\n");
+        char *firstPart = strtok(mesg, "\n");
         ssize_t sizeA = snprintf(a, 100, "%s\n", firstPart);
 
         printf("THIS IS FIRST PART %s\n", firstPart);
         char *secondPart = strtok(NULL, "\n");
         int counter = 0;
         char buff[3];
-        for (size_t idx = 0; idx < sizeof(secondPart) / sizeof(char); ++idx)
+        if (secondPart != NULL)
         {
-            snprintf(buff, 3, "%02x", msg[idx]);
-            printf("%lu: %s\n", idx, buff);
-            for (int i = 0; i < 3; i++)
+            for (size_t idx = 0; idx < (sizeof(secondPart) / sizeof(char)); ++idx)
             {
-                b[counter] = buff[i];
-                counter++;
+                snprintf(buff, 3, "%02x", secondPart[idx]);
+                printf("%lu: %s\n", idx, buff);
+                for (int i = 0; i < 3; i++)
+                {
+                    b[counter] = buff[i];
+                    counter++;
+                }
             }
         }
+
+        printf("NOW THIS IS B: %s", b);
 
         ssize_t sizeB = (sizeof(secondPart) / sizeof(char)) * 3;
         printf("THiS IS LENGTH OF B: %ld\n", sizeB);
@@ -548,7 +556,7 @@ void *work(void *obj)
         //sleep(5);
         wrkr->clientSock = -1;
         printf("done with request\n");
-        ssize_t totalLen = sizeA + sizeC + sizeB; //+ theCountSize;
+        ssize_t totalLen = sizeA + sizeC + sizeB + theCountSize;
         //pthread_cond_signal(&wrkr->cond);
         ssize_t oSet = *(wrkr->offset);
         *(wrkr->offset) += totalLen;
@@ -557,12 +565,14 @@ void *work(void *obj)
         int count = 0;
         char keepPrinting[150];
 
+        printf("WHY IS B CHANGED: %s", b);
+
         pthread_mutex_unlock(&mut);
         if (wrkr->logFile != -1)
         {
             pwrite(wrkr->logFile, a, sizeA, oSet);
             oSet += sizeA;
-            /*if (secondPart != NULL)
+            if (secondPart != NULL)
             {
                 for (int j = 0; j < theCountSize / 9; j++)
                 {
@@ -571,15 +581,21 @@ void *work(void *obj)
                         for (int i = 0; i < 60 && count < sizeB; i++)
                         {
                             printHex[i] = b[count];
+                            printf("Why is this not printing: %s\n", printHex);
+                            printf("oajdkfjasldfinting: %s\n", b);
+
+                            printf("THIS IS COUNT: %d\n", count);
                             count++;
                         }
+                        printf("This is the hex: %s", printHex);
                         //This is not correct it will always try to read 69 bytes even when their is not 69 bytes i think
                         ssize_t d = snprintf(keepPrinting, 69, "%08d %s", hexCount, printHex);
                         hexCount += 20;
                         pwrite(wrkr->logFile, keepPrinting, d, oSet);
                         oSet += d;
                     }
-                }*/
+                }
+            }
 
             /*for (int i = 0; i < sizeB; i++)
                 {
@@ -592,12 +608,15 @@ void *work(void *obj)
                         snprintf(printHex,"%08d %s"
                         count+=20;
                     }
-                }*/
+
+                }
+                pwrite(wrkr->logFile, b, sizeB, oSet);
+            oSet += sizeB;
+                */
 
             //pwrite(wrkr->logFile, "\n", 1, oSet);
             //}
-            pwrite(wrkr->logFile, b, sizeB, oSet);
-            oSet += sizeB;
+
             pwrite(wrkr->logFile, c, sizeC, oSet);
             oSet += sizeC;
         }
