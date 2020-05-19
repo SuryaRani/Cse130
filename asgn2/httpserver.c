@@ -475,6 +475,36 @@ char *sendLog(char *msg, int file)
     return msg;
 }
 
+void makeHex(char *buff, char *mesg)
+{
+    int size = strlen(mesg);
+    char smallBuff[20];
+    int counter = 0;
+    char count[16];
+    //smallBuff[0] = '\0';
+    for (int i = 0; i < size; i++)
+    {
+        snprintf(smallBuff, 19, " %02X", mesg[i]);
+        printf("THIS IS SMALL BUFF: %s\n", smallBuff);
+        if (i % 20 == 0 && i != 0)
+        {
+            strcat(buff, "\n");
+            snprintf(count, 15, "%08d ", counter);
+            strcat(buff, count);
+            counter += 20;
+        }
+        else if (i == 0)
+        {
+            snprintf(count, 15, "%08d ", counter);
+            counter += 20;
+            strcat(buff, count);
+        }
+        strcat(buff, smallBuff);
+        printf("THIS IS BUFFER: %s\n", buff);
+    }
+    strcat(buff, "\n");
+}
+
 void *work(void *obj)
 {
     workerThread *wrkr = (workerThread *)obj;
@@ -513,25 +543,13 @@ void *work(void *obj)
 
         printf("THIS IS FIRST PART %s\n", firstPart);
         char *secondPart = strtok(NULL, "\n");
-        int counter = 0;
-        char buff[3];
-        if (secondPart != NULL)
-        {
-            for (size_t idx = 0; idx < (sizeof(secondPart) / sizeof(char)); ++idx)
-            {
-                snprintf(buff, 3, "%02x", secondPart[idx]);
-                printf("%lu: %s\n", idx, buff);
-                for (int i = 0; i < 3; i++)
-                {
-                    b[counter] = buff[i];
-                    counter++;
-                }
-            }
-        }
+        int counting = 0;
+        char buff[10];
+        // char buff[16000];
 
         printf("NOW THIS IS B: %s", b);
 
-        ssize_t sizeB = (sizeof(secondPart) / sizeof(char)) * 3;
+        ssize_t sizeB = (sizeof(secondPart) / sizeof(char));
         printf("THiS IS LENGTH OF B: %ld\n", sizeB);
         ssize_t sizeC = snprintf(c, 20, "========\n");
 
@@ -556,7 +574,12 @@ void *work(void *obj)
         //sleep(5);
         wrkr->clientSock = -1;
         printf("done with request\n");
-        ssize_t totalLen = sizeA + sizeC + sizeB + theCountSize;
+        if (secondPart != NULL)
+        {
+            makeHex(b, secondPart);
+        }
+        sizeB = strlen(b);
+        ssize_t totalLen = sizeA + sizeC + sizeB;
         //pthread_cond_signal(&wrkr->cond);
         ssize_t oSet = *(wrkr->offset);
         *(wrkr->offset) += totalLen;
@@ -572,87 +595,23 @@ void *work(void *obj)
         {
             pwrite(wrkr->logFile, a, sizeA, oSet);
             oSet += sizeA;
+            printf("DO I asdfjkljasdlfjjaldsf IN HERE\n");
+
             if (secondPart != NULL)
             {
-                for (int j = 0; j < theCountSize / 9; j++)
-                {
-                    if (theCountSize > 0)
-                    {
-                        for (int i = 0; i < 60 && count < sizeB; i++)
-                        {
-                            printHex[i] = b[count];
-                            printf("Why is this not printing: %s\n", printHex);
-                            printf("oajdkfjasldfinting: %s\n", b);
+                printf("DO I GO IN HERE\n");
 
-                            printf("THIS IS COUNT: %d\n", count);
-                            count++;
-                        }
-                        printf("This is the hex: %s", printHex);
-                        //This is not correct it will always try to read 69 bytes even when their is not 69 bytes i think
-                        ssize_t d = snprintf(keepPrinting, 69, "%08d %s", hexCount, printHex);
-                        hexCount += 20;
-                        pwrite(wrkr->logFile, keepPrinting, d, oSet);
-                        oSet += d;
-                    }
-                }
-            }
+                printf("This is B: %s\n", b);
 
-            /*for (int i = 0; i < sizeB; i++)
-                {
-                    if (count != sizeB)
-                    {
-                        if (i % 20 == 0 && i != 0)
-                        {
-                            pwrite(wrkr->logFile, printHex, sizeB, oSet);
-                        }
-                        snprintf(printHex,"%08d %s"
-                        count+=20;
-                    }
-
-                }
                 pwrite(wrkr->logFile, b, sizeB, oSet);
-            oSet += sizeB;
-                */
-
-            //pwrite(wrkr->logFile, "\n", 1, oSet);
-            //}
+                oSet += sizeB;
+            }
 
             pwrite(wrkr->logFile, c, sizeC, oSet);
             oSet += sizeC;
         }
     }
 }
-
-/*void *delegate(void *obj)
-{
-    printf("In main thread\n");
-    while (true)
-    {
-        pthread_mutex_lock(mut);
-        while (dataReady)
-        {
-            pthread_cond_wait(&cond, &mut);
-        }
-        //do stuff in here
-        int clientSock = accept(server_sockd, &client_addr, &client_addrlen);
-
-        if (clientSock >= 0)
-        {
-            q[tail] = clientSock;
-            if (tail == 999)
-            {
-                tail = 0;
-            }
-            else
-            {
-                tail++;
-            }
-        }
-        dataReady = 1;
-        pthread_cond_signal(&cond);
-        pthread_mutex_unlock(&mut);
-    }
-}*/
 
 int main(int argc, char *argv[])
 {
@@ -787,13 +746,7 @@ int main(int argc, char *argv[])
     struct sockaddr client_addr;
     socklen_t client_addrlen;
 
-    //these are to take in the arguments from the request that the client sends us like function name and conten length etc
-    /* char func[5];
-    long conLen = 0;
-    char *token;
-    char fileName[50];
-    char serverVersion[20];*/
-
+   
     // we want the server to keep running until the user decides to shut it down
     int counter = 0;
     int target = 0;
@@ -820,142 +773,6 @@ int main(int argc, char *argv[])
         }
         pthread_cond_signal(&workers[target].cond);
         counter++;
-
-        /*while ((client_sockd = ) >= 0)
-        {
-            q[tail] = client_sockd;
-            if (tail == 999 && head == 0)
-            {
-                dprintf(STDERR_FILENO, "queue is full\n");
-            }
-            else if (tail == 999)
-            {
-                tail = 0;
-                qSize = 999 - head;
-            }
-            else
-            {
-                tail++;
-                qSize++;
-            }
-        }*/
-
-        // Remember errors happen
-
-        /*char buff[BUFFER_SIZE + 1];
-        ssize_t bytes = recv(client_sockd, buff, BUFFER_SIZE, 0);
-        buff[bytes] = 0; // null terminate
-        //creating a copy of the request to be able to check if their is data at the end that i need to read to be able to put
-        //char buffCopy[BUFFER_SIZE + 1];
-        //strcpy(buffCopy, buff);
-        //char *truncBuff = strtok(buff, "\r\n\r\n");
-        //new comment
-        //char *newTok = strtok(buffCopy, "\r\n\r\n");
-        //newTok = strtok(NULL, "\r\n\r\n");
-        //printf("This is new tok: %s\n", newTok);
-        //parsing algorithm
-        //first we want to delimit each part of the request by the \r\n to get each header, this will give us the first header
-        // the first header contains the function name and the filename which we need
-        token = strtok(buff, "\r\n");
-        sscanf(token, "%s %s %s", func, fileName, serverVersion);
-        //checks if first character is a / or not
-        if (strcmp(serverVersion, "HTTP/1.1") != 0)
-        {
-            send(client_sockd, badMesg, strlen(badMesg), 0);
-            close(client_sockd);
-        }
-        if (fileName[0] == '/')
-        {
-            memmove(fileName, fileName + 1, strlen(fileName));
-        }
-        else
-        {
-            send(client_sockd, badMesg, strlen(badMesg), 0);
-            close(client_sockd);
-        }
-        //check if filename violates any of the rules
-        // first check the size make sure it is less than or equal to 27 characters
-
-        if (strlen(fileName) > 27)
-        {
-            //i think i might have to change the response for errors to only have one \r\n instead of two and then close
-            send(client_sockd, badMesg, strlen(badMesg), 0);
-            //printf("in filename siz\n");
-            close(client_sockd);
-        }
-
-        //check if filename is alphanumeric or contains -, _
-        for (int i = 0; i < strlen(fileName); i++)
-        {
-            if (!((isalpha(fileName[i])) != 0 || (isdigit(fileName[i]) != 0) || fileName[i] == '-' || fileName[i] == '_'))
-            {
-                send(client_sockd, badMesg, strlen(badMesg), 0);
-                //printf("IN Alpha num\n");
-                close(client_sockd);
-                break;
-            }
-        }
-        //to move onto the next token
-        token = strtok(NULL, "\r\n");
-        char header1[40];
-        char header2[40];
-        // this tokenizes each part of the buffer by \r\n to seperate headers
-        // make sure that each header follows the right conventions or else throw an error
-        while (token != NULL)
-        {
-            // this is to check if it is giving content length in request
-            if (sscanf(token, "Content-Length: %ld", &conLen) > 0)
-            {
-            }
-            // this is checking if its a normal header and if it is we just ignore it
-            else if (sscanf(token, "%s %s", header1, header2) == 2)
-            {
-                if (header1[strlen(header1) - 1] != ':')
-                {
-                    send(client_sockd, badMesg, strlen(badMesg), 0);
-                    close(client_sockd);
-                }
-            }
-            // if it contains another \r\n in the string that means its the end of the request and might have data after it
-            // we must read the data after if it is a put
-            else
-            {
-                send(client_sockd, badMesg, strlen(badMesg), 0);
-                close(client_sockd);
-            }
-            token = strtok(NULL, "\r\n");
-        }
-
-        printf("[+] received %ld bytes from client\n[+] response: ", bytes);
-        //sscanf(buff, "%s ", func);
-
-        write(STDOUT_FILENO, buff, bytes);
-
-        // once we parse through the headers we use the arguments that we made and we can go into one of these three functions
-        if (strcmp(func, "HEAD") == 0)
-        {
-            head(client_sockd, fileName);
-            close(client_sockd);
-            //dprintf(client_sockd, "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
-        }
-        else if (strcmp(func, "PUT") == 0)
-        {
-
-            //there might be an error here since we are not checking if the words before the content length is exactly content length
-            // i think well be fine because of the sscanf which has that string in the formating
-            put(conLen, client_sockd, fileName); //, buffCopy, newTok);
-            close(client_sockd);
-        }
-        else if (strcmp(func, "GET") == 0)
-        {
-            get(client_sockd, fileName);
-            close(client_sockd);
-        }
-        else
-        {
-            send(client_sockd, badMesg, strlen(badMesg), 0);
-            close(client_sockd);
-        }*/
     }
     return 0;
 }
