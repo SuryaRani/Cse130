@@ -138,7 +138,7 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         //printf("SHOULD IT BE  A MSG: %s\nThis is the size: %X\n", fileRecieved, sizeof(fileRecieved) / sizeof(uint8_t));
         //printf("THIS HAS TO BE MSG\n")
 
-        sprintf(msg, "PUT /%s length %ld\n%s========\n", file, length, (unsigned char *)fileRecieved);
+        //sprintf(msg, "PUT /%s length %ld\n%s========\n", file, length, fileRecieved);
         return msg;
     }
 }
@@ -204,7 +204,6 @@ char *get(int clientSock, char *file, char *msg)
                 //strcat(dataRecv, (unsigned char *)rd);
                 for (int i = 0; i < reading; i++)
                 {
-                    printf("STUCK 13\n");
                     dataRecv[counter] = rd[i];
                     counter++;
                 }
@@ -215,12 +214,12 @@ char *get(int clientSock, char *file, char *msg)
                 printf("STUCK 16\n");
                 while (keepRead == 10000 && w == 10000)
                 {
-                    printf("STUCK IN GET LOOP\n");
+                    //printf("STUCK IN GET LOOP\n");
                     //strcat(dataRecv, rd);
                     for (int i = 0; i < keepRead; i++)
                     {
-                        printf("STUCK 17\n");
-                        printf("THIS IS DATA %d\n", rd[i]);
+                        //printf("STUCK 17\n");
+                        //printf("THIS IS DATA %d\n", rd[i]);
                         if (counter > fileSize)
                         {
                             printf("UH OH\n");
@@ -236,11 +235,11 @@ char *get(int clientSock, char *file, char *msg)
                 // once the buffer is no longer full which means that this should be the last time we send
                 if (keepRead < 10000 && keepRead > 0)
                 {
-                    printf("STUCK 19\n");
+                    //printf("STUCK 19\n");
                     //strcat(dataRecv, rd);
                     for (int i = 0; i < keepRead; i++)
                     {
-                        printf("STUCK IN GET LOOP\n");
+                        //printf("STUCK IN GET LOOP\n");
                         dataRecv[counter] = rd[i];
                         counter++;
                     }
