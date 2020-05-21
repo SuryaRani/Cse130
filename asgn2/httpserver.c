@@ -45,6 +45,7 @@ int front;
 int tail;
 int fails = 0;
 int trials = 0;
+int requests;
 
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 
@@ -606,9 +607,12 @@ void *work(void *obj)
     {
         pthread_mutex_lock(&mut);
         printf("Worker: [%d]\n", wrkr->id);
-        while (wrkr->clientSock < 0)
+        if (requests == 0)
         {
-            pthread_cond_wait(&wrkr->cond, &mut);
+            while (wrkr->clientSock < 0)
+            {
+                pthread_cond_wait(&wrkr->cond, &mut);
+            }
         }
         trials++;
         cSock = q[front];
@@ -687,7 +691,7 @@ void *work(void *obj)
         // char keepPrinting[150];
 
         //printf("WHY IS B CHANGED: %s", b);
-
+        requests--;
         pthread_mutex_unlock(&mut);
         printf("SERVER [%d] is done\n", wrkr->id);
         if (wrkr->logFile != -1)
@@ -853,6 +857,7 @@ int main(int argc, char *argv[])
     {
         printf("[+] server is waiting...\n");
         int client_sockd = accept(server_sockd, &client_addr, &client_addrlen);
+        requests++;
 
         target = counter % numThreads;
         workers[target].clientSock = client_sockd;
