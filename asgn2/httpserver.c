@@ -56,6 +56,8 @@ const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-
 
 char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, char *maybeData)
 {
+    printf("AM I STUCK IN PUT\n");
+
     //check if we have write permissions for file
     struct stat st;
     int result = stat(file, &st);
@@ -105,6 +107,7 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         ssize_t w = write(op, fileRecieved, r);
         while (var != length)
         {
+            printf("STUCK IN PUT LOOP\n");
             r = recv(clientSock, fileRecieved, length, 0);
             var += r;
             w = write(op, fileRecieved, r);
@@ -130,6 +133,8 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
 
 char *get(int clientSock, char *file, char *msg)
 {
+    printf("AM I STUCK IN Get\n");
+
     //check if we have read permissions for file
     struct stat sta;
     int result = stat(file, &sta);
@@ -182,6 +187,7 @@ char *get(int clientSock, char *file, char *msg)
                 size_t keepRead = read(op, rd, 1000);
                 while (keepRead == 1000 && w == 1000)
                 {
+                    printf("STUCK IN GET LOOP\n");
                     //strcat(dataRecv, rd);
                     for (int i = 0; i < keepRead; i++)
                     {
@@ -198,6 +204,7 @@ char *get(int clientSock, char *file, char *msg)
                     //strcat(dataRecv, rd);
                     for (int i = 0; i < keepRead; i++)
                     {
+                        printf("STUCK IN GET LOOP\n");
                         dataRecv[counter] = rd[i];
                         counter++;
                     }
@@ -253,6 +260,7 @@ char *get(int clientSock, char *file, char *msg)
 
 char *head(int clientSock, char *file, char *msg)
 {
+    printf("AM I STUCK IN HEAD\n");
     //check if we have read permissions for file
     struct stat sta;
     int result = stat(file, &sta);
@@ -617,11 +625,11 @@ int main(int argc, char *argv[])
     char *logFile = NULL;
     //
     printf("THis is first arg: %s\n", argv[0]);
-    if (strcmp(argv[0], "./httpserver") != 0)
+    /*if (strcmp(argv[0], "./httpserver") != 0)
     {
         dprintf(STDERR_FILENO, "Include httpserver\n");
         return EXIT_FAILURE;
-    }
+    }*/
     for (int i = 1; i < argc; i++)
     {
         if (atoi(argv[i]) != 0)
