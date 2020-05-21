@@ -145,11 +145,14 @@ char *get(int clientSock, char *file, char *msg)
     //check if we have read permissions for file
     struct stat sta;
     int result = stat(file, &sta);
+    printf("STUCK 1\n");
     //char msg[15000];
     if (result == 0)
     {
+        printf("STUCK 2\n");
         if ((sta.st_mode & S_IRUSR) == 0)
         {
+            printf("STUCK 3\n");
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
             fails++;
 
@@ -157,57 +160,78 @@ char *get(int clientSock, char *file, char *msg)
             return msg;
         }
     }
+    printf("STUCK 4\n");
     //open the file to only read and then create a buffer to store the data in
     int op = open(file, O_RDONLY);
-    uint8_t rd[1000];
+    uint8_t rd[10000];
+    printf("STUCK 5\n");
     if (op >= 0)
     {
+        printf("STUCK 6\n");
         //this is to find the file size so we can print the ok message before continually reading and writing
         struct stat st;
         stat(file, &st);
+        printf("STUCK 7\n");
         //this is to get the file size to send the ok message if everything is ok
         size_t fileSize = st.st_size;
-        size_t reading = read(op, rd, 1000);
+        printf("STUCK 8\n");
+        size_t reading = read(op, rd, 10000);
+        printf("STUCK 9\n");
 
         //send the response first then send the data after
         //create string to send
-        char okMesg[1000];
-        uint8_t dataRecv[fileSize];
+        char okMesg[10000];
+        uint8_t dataRecv[fileSize + 1];
         int counter = 0;
+        printf("STUCK 10\n");
         sprintf(okMesg, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         //dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         send(clientSock, okMesg, strlen(okMesg), 0);
         //check that it read some bytes so we can start sending them over to the client
         if (reading != 0)
         {
+            printf("STUCK 11\n");
             //if the buffer is full then you want to send it and then keep reading and writing the data
-            if (reading == 1000)
+            if (reading == 10000)
             {
+                printf("STUCK 12\n");
                 //write the data in the buffer first to the client then keep reading and writing in a loop
                 //strcat(dataRecv, (unsigned char *)rd);
                 for (int i = 0; i < reading; i++)
                 {
+                    printf("STUCK 13\n");
                     dataRecv[counter] = rd[i];
                     counter++;
                 }
+                printf("STUCK 14\n");
                 size_t w = send(clientSock, rd, reading, 0);
-                size_t keepRead = read(op, rd, 1000);
-                while (keepRead == 1000 && w == 1000)
+                printf("STUCK 15\n");
+                size_t keepRead = read(op, rd, 10000);
+                printf("STUCK 16\n");
+                while (keepRead == 10000 && w == 10000)
                 {
                     printf("STUCK IN GET LOOP\n");
                     //strcat(dataRecv, rd);
                     for (int i = 0; i < keepRead; i++)
                     {
+                        printf("STUCK 17\n");
+                        printf("THIS IS DATA %d\n", rd[i]);
+                        if (counter > fileSize)
+                        {
+                            printf("UH OH\n");
+                        }
                         dataRecv[counter] = rd[i];
                         counter++;
                     }
+                    printf("STUCK 18\n");
                     w = send(clientSock, rd, keepRead, 0);
-                    keepRead = read(op, rd, 1000);
+                    keepRead = read(op, rd, 10000);
                     //printf("IS this infinite loop prob not\n");
                 }
                 // once the buffer is no longer full which means that this should be the last time we send
-                if (keepRead < 1000 && keepRead > 0)
+                if (keepRead < 10000 && keepRead > 0)
                 {
+                    printf("STUCK 19\n");
                     //strcat(dataRecv, rd);
                     for (int i = 0; i < keepRead; i++)
                     {
@@ -222,11 +246,14 @@ char *get(int clientSock, char *file, char *msg)
             {
                 //if the buffer is not full after the first read
                 //strcat(dataRecv, rd);
+                printf("STUCK 20\n");
                 for (int i = 0; i < reading; i++)
                 {
+                    printf("STUCK 21\n");
                     dataRecv[counter] = rd[i];
                     counter++;
                 }
+                printf("STUCK 22\n");
                 size_t sending = send(clientSock, rd, reading, 0);
                 if (sending == 0)
                 {
@@ -234,7 +261,7 @@ char *get(int clientSock, char *file, char *msg)
             }
         }
 
-        sprintf(msg, "GET /%s length %ld\n%s========\n", file, fileSize, (unsigned char *)dataRecv);
+        sprintf(msg, "GET /%s length %ld\n%s========\n", file, fileSize, dataRecv);
         return msg;
     }
     //this is all error checking to make sure that the file is found and not forbidden etc
@@ -603,6 +630,7 @@ void *work(void *obj)
         //printf("WHY IS B CHANGED: %s", b);
 
         pthread_mutex_unlock(&mut);
+        printf("SERVER [%d] is done\n", wrkr->id);
         if (wrkr->logFile != -1)
         {
             pwrite(wrkr->logFile, a, sizeA, oSet);
@@ -633,11 +661,11 @@ int main(int argc, char *argv[])
     char *logFile = NULL;
     //
     printf("THis is first arg: %s\n", argv[0]);
-    if (strcmp(argv[0], "./httpserver") != 0)
+    /*if (strcmp(argv[0], "./httpserver") != 0)
     {
         dprintf(STDERR_FILENO, "Include httpserver\n");
         return EXIT_FAILURE;
-    }
+    }*/
     for (int i = 1; i < argc; i++)
     {
         if (atoi(argv[i]) != 0)
