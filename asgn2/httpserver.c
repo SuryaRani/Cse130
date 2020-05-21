@@ -724,11 +724,11 @@ int main(int argc, char *argv[])
     char *logFile = NULL;
     //
     printf("THis is first arg: %s\n", argv[0]);
-    /*if (strcmp(argv[0], "./httpserver") != 0)
+    if (strcmp(argv[0], "./httpserver") != 0)
     {
         dprintf(STDERR_FILENO, "Include httpserver\n");
         return EXIT_FAILURE;
-    }*/
+    }
     for (int i = 1; i < argc; i++)
     {
         if (atoi(argv[i]) != 0)
