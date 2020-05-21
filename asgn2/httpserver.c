@@ -95,6 +95,11 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         printf("STUCK 8\n");
         //create a buffer to store the incoming data with the content length as the length of the buffer
         uint8_t fileRecieved[length];
+        if (length == 0)
+        {
+            sprintf(msg, "PUT /%s length %ld\n========\n", file, length);
+            return msg;
+        }
         printf("STUCK 9\n");
 
         printf("do i ever get here\n");
@@ -181,7 +186,7 @@ char *get(int clientSock, char *file, char *msg)
         //send the response first then send the data after
         //create string to send
         char okMesg[10000];
-        uint8_t dataRecv[fileSize + 1];
+        uint8_t dataRecv[fileSize];
         int counter = 0;
         printf("STUCK 10\n");
         sprintf(okMesg, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
@@ -260,8 +265,9 @@ char *get(int clientSock, char *file, char *msg)
                 }
             }
         }
+        //printf("THis is data Recv: %s\n", dataRecv);
 
-        sprintf(msg, "GET /%s length %ld\n%s========\n", file, fileSize, dataRecv);
+        //sprintf(msg, "GET /%s length %ld\n%s========\n", file, fileSize, dataRecv);
         return msg;
     }
     //this is all error checking to make sure that the file is found and not forbidden etc
@@ -550,7 +556,7 @@ void *work(void *obj)
     printf("IN worker thread\n");
     int cSock;
     // i think they will all be writing to msg and it will mess it up you probably need to let each one have their own buffer
-    char msg[16000];
+    char msg[20000];
     while (1)
     {
         pthread_mutex_lock(&mut);
