@@ -62,49 +62,56 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
     struct stat st;
     int result = stat(file, &st);
     //char msg[15000];
+    printf("STUCK 1\n");
     if (result == 0)
     {
+        printf("STUCK 2\n");
         if ((st.st_mode & S_IWUSR) == 0)
         {
+            printf("STUCK 3\n");
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
             fails++;
             sprintf(msg, "FAIL: PUT /%s HTTP/1.1 --- response 403\n========\n", file);
             return msg;
         }
+        printf("STUCK 4\n");
     }
     //open the file or create it if it doesnt exist
     int op = open(file, O_WRONLY | O_CREAT | O_TRUNC);
+    printf("STUCK 5\n");
     //check if you have access to opening and writing to the file
     if (op < 0)
     {
+        printf("STUCK 6\n");
         send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
         fails++;
+        printf("STUCK 7\n");
 
         sprintf(msg, "FAIL: PUT /%s HTTP/1.1 --- response 500\n========\n", file);
         return msg;
     }
     else
     {
+        printf("STUCK 8\n");
         //create a buffer to store the incoming data with the content length as the length of the buffer
         uint8_t fileRecieved[length];
-        //size_t w = 0;
-        /*if (maybeData != NULL)
-        {
-            printf("in here");
-            write(op, fileRecieved, strlen(maybeData));
-            recv(clientSock, fileRecieved, length - strlen(maybeData), 0);
-            write(op, fileRecieved, length - strlen(maybeData));
-        }
-        else
-        {*/
-        printf("do i ever get here");
+        printf("STUCK 9\n");
+
+        printf("do i ever get here\n");
         //char *tok = strtok(buffer, "\r\n\r\n");
         //printf("TOK = %s\n", tok);
         //long data;
         long var = 0;
+        printf("STUCK herewajkdjf;l\n");
+        printf("THIS IS CLIENT SOCK: %d\n", clientSock);
+
+        printf("this is length: %ld\n", length);
         ssize_t r = recv(clientSock, fileRecieved, length, 0);
+        //printf("this is fileReceieved: %s\n", fileRecieved);
+        printf("STUCK 10\n");
         var += r;
         ssize_t w = write(op, fileRecieved, r);
+        printf("STUCK 11\n");
         while (var != length)
         {
             printf("STUCK IN PUT LOOP\n");
@@ -433,6 +440,7 @@ char *doServer(int client_sockd, char *msg)
     write(STDOUT_FILENO, buff, bytes);
 
     // once we parse through the headers we use the arguments that we made and we can go into one of these three functions
+    printf("THIS IS FILENAME: %s\n", fileName);
     if (strcmp(func, "HEAD") == 0)
     {
         return head(client_sockd, fileName, msg);
@@ -625,11 +633,11 @@ int main(int argc, char *argv[])
     char *logFile = NULL;
     //
     printf("THis is first arg: %s\n", argv[0]);
-    /*if (strcmp(argv[0], "./httpserver") != 0)
+    if (strcmp(argv[0], "./httpserver") != 0)
     {
         dprintf(STDERR_FILENO, "Include httpserver\n");
         return EXIT_FAILURE;
-    }*/
+    }
     for (int i = 1; i < argc; i++)
     {
         if (atoi(argv[i]) != 0)
