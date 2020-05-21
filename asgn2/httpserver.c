@@ -77,6 +77,13 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         printf("STUCK 4\n");
     }
     //open the file or create it if it doesnt exist
+    if (strcmp(file, "healthcheck") == 0)
+    {
+        send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+        fails++;
+        sprintf(msg, "FAIL: PUt /%s HTTP/1.1 --- response 403\n", file);
+        return msg;
+    }
     int op = open(file, O_WRONLY | O_CREAT | O_TRUNC);
     printf("STUCK 5\n");
     //check if you have access to opening and writing to the file
@@ -143,7 +150,7 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
     }
 }
 
-char *get(int clientSock, char *file, char *msg)
+char *get(int clientSock, char *file, char *msg, int log)
 {
     printf("AM I STUCK IN Get\n");
 
@@ -167,6 +174,37 @@ char *get(int clientSock, char *file, char *msg)
     }
     printf("STUCK 4\n");
     //open the file to only read and then create a buffer to store the data in
+    if (strcmp(file, "healthcheck") == 0 && log == 1)
+    {
+        int trialsLen = 0;
+        int failsLen = 0;
+        int healthLen = 0;
+        int trialsDiv = trials;
+        int failsDiv = fails;
+        do
+        {
+            trialsLen++;
+            trialsDiv /= 10;
+        } while (trialsDiv != 0);
+        do
+        {
+            failsLen++;
+            failsDiv /= 10;
+
+        } while (failsDiv != 0);
+        healthLen = trialsLen + failsLen + 1;
+
+        sprintf(msg, "HTTP/1.1 200 OK \r\nContent-Length: %d\r\n\r\n%d\n%d", healthLen, fails, trials);
+        send(clientSock, msg, strlen(msg), 0);
+        return msg;
+    }
+    else if (strcmp(file, "healthcheck") == 0 && log == -1)
+    {
+        send(clientSock, notFoundMesg, strlen(notFoundMesg), 0);
+        fails++;
+        sprintf(msg, "FAIL: GET /%s HTTP/1.1 --- response 404\n", file);
+        return msg;
+    }
     int op = open(file, O_RDONLY);
     uint8_t rd[10000];
     printf("STUCK 5\n");
@@ -315,6 +353,14 @@ char *head(int clientSock, char *file, char *msg)
             return msg;
         }
     }
+    if (strcmp(file, "healthcheck") == 0)
+    {
+        send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
+        sprintf(msg, "FAIL: HEAD /%s HTTP/1.1 --- response 403\n", file);
+        fails++;
+
+        return msg;
+    }
     //bascially same exact thing as put but just dont send data we just need the file size and to make sure that we can access the file
     int op = open(file, O_RDONLY);
 
@@ -357,7 +403,7 @@ char *head(int clientSock, char *file, char *msg)
         }
     }
 }
-char *doServer(int client_sockd, char *msg)
+char *doServer(int client_sockd, char *msg, int log)
 {
     char func[5];
     long conLen = 0;
@@ -489,7 +535,7 @@ char *doServer(int client_sockd, char *msg)
     }
     else if (strcmp(func, "GET") == 0)
     {
-        return get(client_sockd, fileName, msg);
+        return get(client_sockd, fileName, msg, log);
         close(client_sockd);
     }
     else
@@ -575,8 +621,16 @@ void *work(void *obj)
             front++;
         }
         //printf("DSKJFLASJIT MIGHT BE CuZ THIS\n");
-
-        char *mesg = doServer(cSock, msg);
+        int log = 0;
+        if (wrkr->logFile == -1)
+        {
+            log = -1;
+        }
+        else
+        {
+            log = 1;
+        }
+        char *mesg = doServer(cSock, msg, log);
         //printf("DO I GET HERE IT MIGHT BE CuZ THIS\n");
 
         char a[100];
