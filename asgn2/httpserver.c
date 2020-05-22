@@ -146,10 +146,12 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         //printf("SHOULD IT BE  A MSG: %s\nThis is the size: %X\n", fileRecieved, sizeof(fileRecieved) / sizeof(uint8_t));
         //printf("THIS HAS TO BE MSG\n")
 
-        sprintf(msg, "PUT /%s length %ld\n========\n", file, length); //fileRecieved);
+        char *bigMsg = malloc(length + 150);
+
+        sprintf(bigMsg, "PUT /%s length %ld\n%s========\n", file, length, fileRecieved);
         //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
 
-        return msg;
+        return bigMsg;
     }
 }
 
@@ -263,9 +265,14 @@ char *get(int clientSock, char *file, char *msg, int log)
                     {
                         //printf("STUCK 17\n");
                         //printf("THIS IS DATA %d\n", rd[i]);
-                        if (counter > fileSize)
+                        if (counter >= fileSize)
                         {
-                            printf("UH OH\n");
+                            for (int i = 0; i < 1000; i++)
+                            {
+
+                                printf("UH OH\n");
+                            }
+                            return "UH OH";
                         }
                         dataRecv[counter] = rd[i];
                         counter++;
@@ -297,6 +304,10 @@ char *get(int clientSock, char *file, char *msg, int log)
                 for (int i = 0; i < reading; i++)
                 {
                     //printf("STUCK 21\n");
+                    if (counter >= fileSize)
+                    {
+                        printf("THIS IS OUT OF BOUNDS CANT BE HERE\n");
+                    }
                     dataRecv[counter] = rd[i];
                     counter++;
                 }
@@ -309,8 +320,14 @@ char *get(int clientSock, char *file, char *msg, int log)
         }
         //printf("THis is data Recv: %s\n", dataRecv);
         //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
-        sprintf(msg, "GET /%s length %ld\n========\n", file, fileSize); //dataRecv);
-        return msg;
+        printf("OK I GET HERE\n");
+        printf("This is the length of the data: %ld\n", sizeof(dataRecv) / sizeof(uint8_t));
+        printf("DO I GO PAST STRLEN\n");
+        char *bigMsg = malloc(fileSize + 150);
+
+        sprintf(bigMsg, "GET /%s length %ld\n%s========\n", file, fileSize, dataRecv);
+        printf("DO I GO PAST SPRINTF\n");
+        return bigMsg;
     }
     //this is all error checking to make sure that the file is found and not forbidden etc
     else
@@ -579,7 +596,7 @@ void makeHex(char *buff, char *mesg)
     //smallBuff[0] = '\0';
     for (int i = 0; i < size; i++)
     {
-        snprintf(smallBuff, 19, " %02X", mesg[i]);
+        snprintf(smallBuff, 19, " %02x", mesg[i]);
         //printf("THIS IS SMALL BUFF: %s\n", smallBuff);
         if (i % 20 == 0 && i != 0)
         {
