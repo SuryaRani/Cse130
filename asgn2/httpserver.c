@@ -146,7 +146,9 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         //printf("SHOULD IT BE  A MSG: %s\nThis is the size: %X\n", fileRecieved, sizeof(fileRecieved) / sizeof(uint8_t));
         //printf("THIS HAS TO BE MSG\n")
 
-        //sprintf(msg, "PUT /%s length %ld\n%s========\n", file, length, fileRecieved);
+        sprintf(msg, "PUT /%s length %ld\n========\n", file, length); //fileRecieved);
+        //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
+
         return msg;
     }
 }
@@ -304,8 +306,8 @@ char *get(int clientSock, char *file, char *msg, int log)
             }
         }
         //printf("THis is data Recv: %s\n", dataRecv);
-
-        //sprintf(msg, "GET /%s length %ld\n%s========\n", file, fileSize, dataRecv);
+        //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
+        sprintf(msg, "GET /%s length %ld\n========\n", file, fileSize); //dataRecv);
         return msg;
     }
     //this is all error checking to make sure that the file is found and not forbidden etc
@@ -609,17 +611,18 @@ void *work(void *obj)
         printf("Worker: [%d]\n", wrkr->id);
         printf("Requests:BEFORE WORK %d\n", requests);
         int rc = 0;
-        if (requests == 0)
+        //if (requests == 0)
+        //{
+        printf("OR COME IN HERE\n");
+        while (requests == 0)
         {
-            printf("OR COME IN HERE\n");
-            while (wrkr->clientSock < 0)
-            {
-                rc = pthread_cond_wait(&wrkr->cond, &mut);
-            }
+            rc = pthread_cond_wait(&wrkr->cond, &mut);
         }
+        //}
         if (requests > 0 && rc == 0)
         {
             printf("I HAVE TO COME HERE RIGHT\n");
+            wrkr->clientSock = q[front];
 
             trials++;
             cSock = q[front];
@@ -869,9 +872,10 @@ int main(int argc, char *argv[])
         int client_sockd = accept(server_sockd, &client_addr, &client_addrlen);
         requests++;
         printf("Requests: AFter accept %d\n", requests);
+        printf("clientSock: %d\n", client_sockd);
 
         target = counter % numThreads;
-        workers[target].clientSock = client_sockd;
+        //workers[target].clientSock = client_sockd;
         q[tail] = client_sockd;
         if (tail == 999 && front == 0)
         {
@@ -887,6 +891,7 @@ int main(int argc, char *argv[])
             tail++;
         }
         pthread_cond_signal(&workers[target].cond);
+        printf("I DEF SINGAL TO WAke\n");
         counter++;
     }
     return 0;
