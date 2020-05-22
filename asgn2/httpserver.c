@@ -292,7 +292,7 @@ char *get(int clientSock, char *file, char *msg, int log)
                 printf("STUCK 20\n");
                 for (int i = 0; i < reading; i++)
                 {
-                    printf("STUCK 21\n");
+                    //printf("STUCK 21\n");
                     dataRecv[counter] = rd[i];
                     counter++;
                 }
@@ -607,111 +607,121 @@ void *work(void *obj)
     {
         pthread_mutex_lock(&mut);
         printf("Worker: [%d]\n", wrkr->id);
+        printf("Requests:BEFORE WORK %d\n", requests);
+        int rc = 0;
         if (requests == 0)
         {
+            printf("OR COME IN HERE\n");
             while (wrkr->clientSock < 0)
             {
-                pthread_cond_wait(&wrkr->cond, &mut);
+                rc = pthread_cond_wait(&wrkr->cond, &mut);
             }
         }
-        trials++;
-        cSock = q[front];
-        if (front == 999)
+        if (requests > 0 && rc == 0)
         {
-            front = 0;
-        }
-        else
-        {
-            front++;
-        }
-        //printf("DSKJFLASJIT MIGHT BE CuZ THIS\n");
-        int log = 0;
-        if (wrkr->logFile == -1)
-        {
-            log = -1;
-        }
-        else
-        {
-            log = 1;
-        }
-        char *mesg = doServer(cSock, msg, log);
-        //printf("DO I GET HERE IT MIGHT BE CuZ THIS\n");
+            printf("I HAVE TO COME HERE RIGHT\n");
 
-        char a[100];
-        char b[16000];
-        char c[20];
-        char *firstPart = strtok(mesg, "\n");
-        ssize_t sizeA = snprintf(a, 100, "%s\n", firstPart);
+            trials++;
+            cSock = q[front];
+            if (front == 999)
+            {
+                front = 0;
+            }
+            else
+            {
+                front++;
+            }
+            //printf("DSKJFLASJIT MIGHT BE CuZ THIS\n");
+            int log = 0;
+            if (wrkr->logFile == -1)
+            {
+                log = -1;
+            }
+            else
+            {
+                log = 1;
+            }
+            char *mesg = doServer(cSock, msg, log);
+            //printf("DO I GET HERE IT MIGHT BE CuZ THIS\n");
 
-        //printf("THIS IS FIRST PART %s\n", firstPart);
-        char *secondPart = strtok(NULL, "\n");
-        //int counting = 0;
-        //char buff[10];
-        // char buff[16000];
+            char a[100];
+            char b[16000];
+            char c[20];
+            char *firstPart = strtok(mesg, "\n");
+            ssize_t sizeA = snprintf(a, 100, "%s\n", firstPart);
 
-        //printf("NOW THIS IS B: %s", b);
+            //printf("THIS IS FIRST PART %s\n", firstPart);
+            char *secondPart = strtok(NULL, "\n");
+            //int counting = 0;
+            //char buff[10];
+            // char buff[16000];
 
-        ssize_t sizeB = (sizeof(secondPart) / sizeof(char));
-        //printf("THiS IS LENGTH OF B: %ld\n", sizeB);
-        ssize_t sizeC = snprintf(c, 20, "========\n");
+            //printf("NOW THIS IS B: %s", b);
 
-        //printf("THIS IS Second PART %s\n", secondPart);
-        //char *firstPart = strtok(msg, "\n");
-        //printf("THIS IS FIRST PART %s\n", firstPart);
-        ssize_t theCountSize = 0;
-        if (sizeB / 60 == 0 && sizeB % 60 > 0)
-        {
-            theCountSize++;
-        }
-        else if (sizeB / 60 > 0 && sizeB % 60 > 0)
-        {
-            theCountSize = (sizeB / 60) + 1;
-        }
-        else
-        {
-            theCountSize = (sizeB / 60);
-        }
-        theCountSize *= 9;
+            ssize_t sizeB = (sizeof(secondPart) / sizeof(char));
+            //printf("THiS IS LENGTH OF B: %ld\n", sizeB);
+            ssize_t sizeC = snprintf(c, 20, "========\n");
 
-        //sleep(5);
-        wrkr->clientSock = -1;
-        printf("done with request\n");
-        if (secondPart != NULL)
-        {
-            makeHex(b, secondPart);
-        }
-        sizeB = strlen(b);
-        ssize_t totalLen = sizeA + sizeC + sizeB;
-        //pthread_cond_signal(&wrkr->cond);
-        ssize_t oSet = *(wrkr->offset);
-        *(wrkr->offset) += totalLen;
-        //char printHex[150];
-        //int hexCount = 0;
-        //int count = 0;
-        // char keepPrinting[150];
+            //printf("THIS IS Second PART %s\n", secondPart);
+            //char *firstPart = strtok(msg, "\n");
+            //printf("THIS IS FIRST PART %s\n", firstPart);
+            ssize_t theCountSize = 0;
+            if (sizeB / 60 == 0 && sizeB % 60 > 0)
+            {
+                theCountSize++;
+            }
+            else if (sizeB / 60 > 0 && sizeB % 60 > 0)
+            {
+                theCountSize = (sizeB / 60) + 1;
+            }
+            else
+            {
+                theCountSize = (sizeB / 60);
+            }
+            theCountSize *= 9;
 
-        //printf("WHY IS B CHANGED: %s", b);
-        requests--;
-        pthread_mutex_unlock(&mut);
-        printf("SERVER [%d] is done\n", wrkr->id);
-        if (wrkr->logFile != -1)
-        {
-            pwrite(wrkr->logFile, a, sizeA, oSet);
-            oSet += sizeA;
-            //printf("DO I asdfjkljasdlfjjaldsf IN HERE\n");
-
+            //sleep(5);
+            wrkr->clientSock = -1;
+            printf("done with request\n");
             if (secondPart != NULL)
             {
-                //printf("DO I GO IN HERE\n");
-
-                //printf("This is B: %s\n", b);
-
-                pwrite(wrkr->logFile, b, sizeB, oSet);
-                oSet += sizeB;
+                makeHex(b, secondPart);
             }
+            sizeB = strlen(b);
+            ssize_t totalLen = sizeA + sizeC + sizeB;
+            //pthread_cond_signal(&wrkr->cond);
+            ssize_t oSet = *(wrkr->offset);
+            *(wrkr->offset) += totalLen;
+            //char printHex[150];
+            //int hexCount = 0;
+            //int count = 0;
+            // char keepPrinting[150];
 
-            pwrite(wrkr->logFile, c, sizeC, oSet);
-            oSet += sizeC;
+            //printf("WHY IS B CHANGED: %s", b);
+            requests--;
+            printf("Requests:AFTER SUB %d\n", requests);
+
+            pthread_mutex_unlock(&mut);
+            printf("SERVER [%d] is done\n", wrkr->id);
+            if (wrkr->logFile != -1)
+            {
+                pwrite(wrkr->logFile, a, sizeA, oSet);
+                oSet += sizeA;
+                //printf("DO I asdfjkljasdlfjjaldsf IN HERE\n");
+
+                if (secondPart != NULL)
+                {
+                    //printf("DO I GO IN HERE\n");
+
+                    //printf("This is B: %s\n", b);
+
+                    pwrite(wrkr->logFile, b, sizeB, oSet);
+                    oSet += sizeB;
+                }
+
+                pwrite(wrkr->logFile, c, sizeC, oSet);
+                oSet += sizeC;
+            }
         }
     }
 }
@@ -724,11 +734,11 @@ int main(int argc, char *argv[])
     char *logFile = NULL;
     //
     printf("THis is first arg: %s\n", argv[0]);
-    if (strcmp(argv[0], "./httpserver") != 0)
+    /*if (strcmp(argv[0], "./httpserver") != 0)
     {
         dprintf(STDERR_FILENO, "Include httpserver\n");
         return EXIT_FAILURE;
-    }
+    }*/
     for (int i = 1; i < argc; i++)
     {
         if (atoi(argv[i]) != 0)
@@ -858,6 +868,7 @@ int main(int argc, char *argv[])
         printf("[+] server is waiting...\n");
         int client_sockd = accept(server_sockd, &client_addr, &client_addrlen);
         requests++;
+        printf("Requests: AFter accept %d\n", requests);
 
         target = counter % numThreads;
         workers[target].clientSock = client_sockd;
