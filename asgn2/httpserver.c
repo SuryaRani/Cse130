@@ -146,7 +146,7 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         //printf("SHOULD IT BE  A MSG: %s\nThis is the size: %X\n", fileRecieved, sizeof(fileRecieved) / sizeof(uint8_t));
         //printf("THIS HAS TO BE MSG\n")
 
-        sprintf(msg, "PUT /%s length %ld\n%s========\n", file, length, fileRecieved);
+        sprintf(msg, "PUT /%s length %ld\n========\n", file, length); //,fileRecieved);
         //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
 
         return msg;
@@ -308,7 +308,7 @@ char *get(int clientSock, char *file, char *msg, int log)
         }
         //printf("THis is data Recv: %s\n", dataRecv);
         //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
-        sprintf(msg, "GET /%s length %ld\n%s========\n", file, fileSize, dataRecv);
+        sprintf(msg, "GET /%s length %ld\n========\n", file, fileSize); //, dataRecv);
         return msg;
     }
     //this is all error checking to make sure that the file is found and not forbidden etc
