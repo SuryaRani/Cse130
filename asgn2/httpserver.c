@@ -55,27 +55,28 @@ const char forbiddenMesg[] = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\
 const char createdMesg[] = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n";
 const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
 
-char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, char *maybeData)
+char *put(long length, int clientSock, char *file, char *msg, int boolSend, char *extraMessage) //, char *buffer, char *maybeData)
 {
-    printf("AM I STUCK IN PUT\n");
+    //printf("AM I STUCK IN PUT\n");
+    printf("THIS IS FILE IN PUT: %s\n", file);
 
     //check if we have write permissions for file
     struct stat st;
     int result = stat(file, &st);
     //char msg[15000];
-    printf("STUCK 1\n");
+    //printf("STUCK 1\n");
     if (result == 0)
     {
-        printf("STUCK 2\n");
+        //printf("STUCK 2\n");
         if ((st.st_mode & S_IWUSR) == 0)
         {
-            printf("STUCK 3\n");
+            //printf("STUCK 3\n");
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
             fails++;
             sprintf(msg, "FAIL: PUT /%s HTTP/1.1 --- response 403\n========\n", file);
             return msg;
         }
-        printf("STUCK 4\n");
+        //printf("STUCK 4\n");
     }
     //open the file or create it if it doesnt exist
     if (strcmp(file, "healthcheck") == 0)
@@ -86,21 +87,29 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         return msg;
     }
     int op = open(file, O_WRONLY | O_CREAT | O_TRUNC);
-    printf("STUCK 5\n");
+    //printf("STUCK 5\n");
     //check if you have access to opening and writing to the file
     if (op < 0)
     {
-        printf("STUCK 6\n");
+        //printf("STUCK 6\n");
         send(clientSock, internalErorrMesg, strlen(internalErorrMesg), 0);
         fails++;
-        printf("STUCK 7\n");
+        //printf("STUCK 7\n");
 
         sprintf(msg, "FAIL: PUT /%s HTTP/1.1 --- response 500\n========\n", file);
         return msg;
     }
+    else if (boolSend == 1)
+    {
+        write(op, extraMessage, strlen(extraMessage));
+        send(clientSock, createdMesg, strlen(createdMesg), 0);
+        char *sendMsg = malloc(1100);
+        sprintf(sendMsg, "PUT /%s length %ld\n%s========\n", file, length, extraMessage);
+        return sendMsg;
+    }
     else
     {
-        printf("STUCK 8\n");
+        //printf("STUCK 8\n");
         //create a buffer to store the incoming data with the content length as the length of the buffer
         char fileRecieved[length];
         if (length == 0)
@@ -108,26 +117,26 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
             sprintf(msg, "PUT /%s length %ld\n========\n", file, length);
             return msg;
         }
-        printf("STUCK 9\n");
+        //printf("STUCK 9\n");
 
         printf("do i ever get here\n");
         //char *tok = strtok(buffer, "\r\n\r\n");
         //printf("TOK = %s\n", tok);
         //long data;
         long var = 0;
-        printf("STUCK herewajkdjf;l\n");
-        printf("THIS IS CLIENT SOCK: %d\n", clientSock);
+        //printf("STUCK herewajkdjf;l\n");
+        //printf("THIS IS CLIENT SOCK: %d\n", clientSock);
 
-        printf("this is length: %ld\n", length);
+        //printf("this is length: %ld\n", length);
         ssize_t r = recv(clientSock, fileRecieved, length, 0);
         //printf("this is fileReceieved: %s\n", fileRecieved);
-        printf("STUCK 10\n");
+        //printf("STUCK 10\n");
         var += r;
         ssize_t w = write(op, fileRecieved, r);
-        printf("STUCK 11\n");
+        //printf("STUCK 11\n");
         while (var != length)
         {
-            printf("STUCK IN PUT LOOP\n");
+            //printf("STUCK IN PUT LOOP\n");
             r = recv(clientSock, fileRecieved, length, 0);
             var += r;
             w = write(op, fileRecieved, r);
@@ -430,12 +439,16 @@ char *doServer(int client_sockd, char *msg, int log)
     char func[5];
     long conLen = 0;
     char *token;
+    char *tokSave;
     char fileName[50];
     char serverVersion[20];
     //char msg[15000];
     char buff[BUFFER_SIZE + 1];
+    char copyBuff[1000];
     ssize_t bytes = recv(client_sockd, buff, BUFFER_SIZE, 0);
     buff[bytes] = 0; // null terminate
+    strcpy(copyBuff, buff);
+    //printf("THiS IS COPY BUFF: %s\n", copyBuff);
     //creating a copy of the request to be able to check if their is data at the end that i need to read to be able to put
     //char buffCopy[BUFFER_SIZE + 1];
     //strcpy(buffCopy, buff);
@@ -447,7 +460,11 @@ char *doServer(int client_sockd, char *msg, int log)
     //parsing algorithm
     //first we want to delimit each part of the request by the \r\n to get each header, this will give us the first header
     // the first header contains the function name and the filename which we need
-    token = strtok(buff, "\r\n");
+    //token = strtok_rm(buff, "\r\n\r\n", &tokSave);
+    token = strtok_r(buff, "\r\n", &tokSave);
+    char bigTok[1000];
+    strcpy(bigTok, token);
+    //rintf("TOKEN HERE: %s\n", token);
     sscanf(token, "%s %s %s", func, fileName, serverVersion);
     //checks if first character is a / or not
     int boolSlash = 0;
@@ -476,7 +493,7 @@ char *doServer(int client_sockd, char *msg, int log)
     // first check the size make sure it is less than or equal to 27 characters
 
     //this might cause problems i might need to change back to 27
-    if (strlen(fileName) > 28 && boolSlash == 0)
+    if (strlen(fileName) > 27 && boolSlash == 0)
     {
         //i think i might have to change the response for errors to only have one \r\n instead of two and then close
         send(client_sockd, badMesg, strlen(badMesg), 0);
@@ -501,9 +518,14 @@ char *doServer(int client_sockd, char *msg, int log)
         }
     }
     //to move onto the next token
-    token = strtok(NULL, "\r\n");
+    token = strtok_r(NULL, "\r\n", &tokSave);
+    strcpy(bigTok, token);
     char header1[40];
     char header2[40];
+    int boolSendData = 0;
+    char sendData[1000];
+    int newBool = 0;
+
     // this tokenizes each part of the buffer by \r\n to seperate headers
     // make sure that each header follows the right conventions or else throw an error
     while (token != NULL)
@@ -511,6 +533,7 @@ char *doServer(int client_sockd, char *msg, int log)
         // this is to check if it is giving content length in request
         if (sscanf(token, "Content-Length: %ld", &conLen) > 0)
         {
+            boolSendData = 1;
         }
         // this is checking if its a normal header and if it is we just ignore it
         else if (sscanf(token, "%s %s", header1, header2) == 2)
@@ -526,6 +549,13 @@ char *doServer(int client_sockd, char *msg, int log)
         }
         // if it contains another \r\n in the string that means its the end of the request and might have data after it
         // we must read the data after if it is a put
+        else if (boolSendData == 1)
+
+        {
+            strcpy(sendData, token);
+            newBool = 1;
+            break;
+        }
         else
         {
             send(client_sockd, badMesg, strlen(badMesg), 0);
@@ -534,7 +564,7 @@ char *doServer(int client_sockd, char *msg, int log)
             fails++;
             return msg;
         }
-        token = strtok(NULL, "\r\n");
+        token = strtok_r(NULL, "\r\n", &tokSave);
     }
 
     printf("[+] received %ld bytes from client\n[+] response: ", bytes);
@@ -555,7 +585,7 @@ char *doServer(int client_sockd, char *msg, int log)
 
         //there might be an error here since we are not checking if the words before the content length is exactly content length
         // i think well be fine because of the sscanf which has that string in the formating
-        return put(conLen, client_sockd, fileName, msg); //, buffCopy, newTok);
+        return put(conLen, client_sockd, fileName, msg, newBool, sendData); //, buffCopy, newTok);
         close(client_sockd);
     }
     else if (strcmp(func, "GET") == 0)
@@ -633,22 +663,23 @@ void *work(void *obj)
         pthread_mutex_lock(&mut);
         printf("Worker: [%d]\n", wrkr->id);
         printf("Requests:BEFORE WORK %d\n", requests);
-        int rc = 0;
         //if (requests == 0)
         //{
         printf("OR COME IN HERE\n");
-        while (requests == 0)
+        if (requests == 0)
         {
-            rc = pthread_cond_wait(&wrkr->cond, &mut);
+            pthread_cond_wait(&wrkr->cond, &mut);
         }
         //}
-        if (requests > 0 && rc == 0)
+        if (requests > 0)
         {
             printf("I HAVE TO COME HERE RIGHT\n");
             wrkr->clientSock = q[front];
+            printf("THIS IS MY CLIENT SOCK: %d\n", wrkr->clientSock);
 
             trials++;
             cSock = q[front];
+            printf("THIS IS MY C SOCK: %d\n", cSock);
             if (front == 999)
             {
                 front = 0;
