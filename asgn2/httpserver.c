@@ -577,24 +577,25 @@ void makeHex(char *buff, char *mesg)
     //smallBuff[0] = '\0';
     for (int i = 0; i < size; i++)
     {
-        snprintf(smallBuff, 19, " %02X", mesg[i]);
+        snprintf(smallBuff, 19, " %02x", mesg[i]);
         //printf("THIS IS SMALL BUFF: %s\n", smallBuff);
         if (i % 20 == 0 && i != 0)
         {
             strcat(buff, "\n");
-            snprintf(count, 15, "%08d ", counter);
+            snprintf(count, 15, "%08d", counter);
             strcat(buff, count);
             counter += 20;
         }
         else if (i == 0)
         {
-            snprintf(count, 15, "%08d ", counter);
+            snprintf(count, 15, "%08d", counter);
             counter += 20;
             strcat(buff, count);
         }
         strcat(buff, smallBuff);
         //printf("THIS IS BUFFER: %s\n", buff);
     }
+    strcat(buff, " 0a");
     strcat(buff, "\n");
 }
 
