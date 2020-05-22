@@ -102,7 +102,7 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
     {
         printf("STUCK 8\n");
         //create a buffer to store the incoming data with the content length as the length of the buffer
-        uint8_t fileRecieved[length];
+        char fileRecieved[length];
         if (length == 0)
         {
             sprintf(msg, "PUT /%s length %ld\n========\n", file, length);
@@ -231,7 +231,7 @@ char *get(int clientSock, char *file, char *msg, int log)
         //send the response first then send the data after
         //create string to send
         char okMesg[10000];
-        uint8_t dataRecv[fileSize];
+        char dataRecv[fileSize];
         int counter = 0;
         printf("STUCK 10\n");
         sprintf(okMesg, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
@@ -320,9 +320,9 @@ char *get(int clientSock, char *file, char *msg, int log)
         }
         //printf("THis is data Recv: %s\n", dataRecv);
         //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
-        printf("OK I GET HERE\n");
-        printf("This is the length of the data: %ld\n", sizeof(dataRecv) / sizeof(uint8_t));
-        printf("DO I GO PAST STRLEN\n");
+        //printf("OK I GET HERE\n");
+        //printf("This is the length of the data: %ld\n", sizeof(dataRecv) / sizeof(uint8_t));
+        //
         char *bigMsg = malloc(fileSize + 150);
 
         sprintf(bigMsg, "GET /%s length %ld\n%s========\n", file, fileSize, dataRecv);
@@ -450,6 +450,7 @@ char *doServer(int client_sockd, char *msg, int log)
     token = strtok(buff, "\r\n");
     sscanf(token, "%s %s %s", func, fileName, serverVersion);
     //checks if first character is a / or not
+    int boolSlash = 0;
     if (strcmp(serverVersion, "HTTP/1.1") != 0)
     {
         send(client_sockd, badMesg, strlen(badMesg), 0);
@@ -461,6 +462,7 @@ char *doServer(int client_sockd, char *msg, int log)
     if (fileName[0] == '/')
     {
         memmove(fileName, fileName + 1, strlen(fileName));
+        boolSlash = 1;
     }
     else
     {
@@ -473,7 +475,8 @@ char *doServer(int client_sockd, char *msg, int log)
     //check if filename violates any of the rules
     // first check the size make sure it is less than or equal to 27 characters
 
-    if (strlen(fileName) > 27)
+    //this might cause problems i might need to change back to 27
+    if (strlen(fileName) > 28 && boolSlash == 0)
     {
         //i think i might have to change the response for errors to only have one \r\n instead of two and then close
         send(client_sockd, badMesg, strlen(badMesg), 0);
@@ -596,7 +599,7 @@ void makeHex(char *buff, char *mesg)
     //smallBuff[0] = '\0';
     for (int i = 0; i < size; i++)
     {
-        snprintf(smallBuff, 19, " %02x", mesg[i]);
+        snprintf(smallBuff, 19, " %02x", (unsigned char)mesg[i]);
         //printf("THIS IS SMALL BUFF: %s\n", smallBuff);
         if (i % 20 == 0 && i != 0)
         {
