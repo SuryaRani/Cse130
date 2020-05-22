@@ -146,7 +146,7 @@ char *put(long length, int clientSock, char *file, char *msg) //, char *buffer, 
         //printf("SHOULD IT BE  A MSG: %s\nThis is the size: %X\n", fileRecieved, sizeof(fileRecieved) / sizeof(uint8_t));
         //printf("THIS HAS TO BE MSG\n")
 
-        sprintf(msg, "PUT /%s length %ld\n========\n", file, length); //fileRecieved);
+        sprintf(msg, "PUT /%s length %ld\n%s========\n", file, length, fileRecieved);
         //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
 
         return msg;
@@ -184,6 +184,7 @@ char *get(int clientSock, char *file, char *msg, int log)
         int healthLen = 0;
         int trialsDiv = trials;
         int failsDiv = fails;
+        trials--;
         do
         {
             trialsLen++;
@@ -307,7 +308,7 @@ char *get(int clientSock, char *file, char *msg, int log)
         }
         //printf("THis is data Recv: %s\n", dataRecv);
         //printf("THIS IS MESSAGE MAYBE SEGFAULT: %s\n", msg);
-        sprintf(msg, "GET /%s length %ld\n========\n", file, fileSize); //dataRecv);
+        sprintf(msg, "GET /%s length %ld\n%s========\n", file, fileSize, dataRecv);
         return msg;
     }
     //this is all error checking to make sure that the file is found and not forbidden etc
@@ -443,17 +444,17 @@ char *doServer(int client_sockd, char *msg, int log)
     {
         memmove(fileName, fileName + 1, strlen(fileName));
     }
-    else
+    /*else
     {
         send(client_sockd, badMesg, strlen(badMesg), 0);
         close(client_sockd);
         sprintf(msg, "FAIL: /%s HTTP/1.1 --- response 400\n", fileName);
         fails++;
         return msg;
-    }
+    }*/
     //check if filename violates any of the rules
     // first check the size make sure it is less than or equal to 27 characters
-
+    printf("STRLEN: %ld\n", strlen(fileName));
     if (strlen(fileName) > 27)
     {
         //i think i might have to change the response for errors to only have one \r\n instead of two and then close
@@ -530,7 +531,6 @@ char *doServer(int client_sockd, char *msg, int log)
     }
     else if (strcmp(func, "PUT") == 0)
     {
-
         //there might be an error here since we are not checking if the words before the content length is exactly content length
         // i think well be fine because of the sscanf which has that string in the formating
         return put(conLen, client_sockd, fileName, msg); //, buffCopy, newTok);
