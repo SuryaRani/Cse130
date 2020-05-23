@@ -58,7 +58,7 @@ const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-
 char *put(long length, int clientSock, char *file, char *msg, int boolSend, char *extraMessage) //, char *buffer, char *maybeData)
 {
     //printf("AM I STUCK IN PUT\n");
-    printf("THIS IS FILE IN PUT: %s\n", file);
+    //printf("THIS IS FILE IN PUT: %s\n", file);
 
     //check if we have write permissions for file
     struct stat st;
@@ -119,7 +119,7 @@ char *put(long length, int clientSock, char *file, char *msg, int boolSend, char
         }
         //printf("STUCK 9\n");
 
-        printf("do i ever get here\n");
+        //printf("do i ever get here\n");
         //char *tok = strtok(buffer, "\r\n\r\n");
         //printf("TOK = %s\n", tok);
         //long data;
@@ -166,19 +166,19 @@ char *put(long length, int clientSock, char *file, char *msg, int boolSend, char
 
 char *get(int clientSock, char *file, char *msg, int log)
 {
-    printf("AM I STUCK IN Get\n");
+    //printf("AM I STUCK IN Get\n");
 
     //check if we have read permissions for file
     struct stat sta;
     int result = stat(file, &sta);
-    printf("STUCK 1\n");
+    //printf("STUCK 1\n");
     //char msg[15000];
     if (result == 0)
     {
-        printf("STUCK 2\n");
+        //printf("STUCK 2\n");
         if ((sta.st_mode & S_IRUSR) == 0)
         {
-            printf("STUCK 3\n");
+            //printf("STUCK 3\n");
             send(clientSock, forbiddenMesg, strlen(forbiddenMesg), 0);
             fails++;
 
@@ -186,7 +186,7 @@ char *get(int clientSock, char *file, char *msg, int log)
             return msg;
         }
     }
-    printf("STUCK 4\n");
+    //printf("STUCK 4\n");
     //open the file to only read and then create a buffer to store the data in
     if (strcmp(file, "healthcheck") == 0 && log == 1)
     {
@@ -223,37 +223,37 @@ char *get(int clientSock, char *file, char *msg, int log)
     }
     int op = open(file, O_RDONLY);
     uint8_t rd[10000];
-    printf("STUCK 5\n");
+    //printf("STUCK 5\n");
     if (op >= 0)
     {
-        printf("STUCK 6\n");
+        //printf("STUCK 6\n");
         //this is to find the file size so we can print the ok message before continually reading and writing
         struct stat st;
         stat(file, &st);
-        printf("STUCK 7\n");
+        //printf("STUCK 7\n");
         //this is to get the file size to send the ok message if everything is ok
         size_t fileSize = st.st_size;
-        printf("STUCK 8\n");
+        //printf("STUCK 8\n");
         size_t reading = read(op, rd, 10000);
-        printf("STUCK 9\n");
+        //printf("STUCK 9\n");
 
         //send the response first then send the data after
         //create string to send
         char okMesg[10000];
         char dataRecv[fileSize];
         int counter = 0;
-        printf("STUCK 10\n");
+        //printf("STUCK 10\n");
         sprintf(okMesg, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         //dprintf(clientSock, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n", fileSize);
         send(clientSock, okMesg, strlen(okMesg), 0);
         //check that it read some bytes so we can start sending them over to the client
         if (reading != 0)
         {
-            printf("STUCK 11\n");
+            //printf("STUCK 11\n");
             //if the buffer is full then you want to send it and then keep reading and writing the data
             if (reading == 10000)
             {
-                printf("STUCK 12\n");
+                //printf("STUCK 12\n");
                 //write the data in the buffer first to the client then keep reading and writing in a loop
                 //strcat(dataRecv, (unsigned char *)rd);
                 for (int i = 0; i < reading; i++)
@@ -261,11 +261,11 @@ char *get(int clientSock, char *file, char *msg, int log)
                     dataRecv[counter] = rd[i];
                     counter++;
                 }
-                printf("STUCK 14\n");
+                //printf("STUCK 14\n");
                 size_t w = send(clientSock, rd, reading, 0);
-                printf("STUCK 15\n");
+                // printf("STUCK 15\n");
                 size_t keepRead = read(op, rd, 10000);
-                printf("STUCK 16\n");
+                //printf("STUCK 16\n");
                 while (keepRead == 10000 && w == 10000)
                 {
                     //printf("STUCK IN GET LOOP\n");
@@ -274,19 +274,11 @@ char *get(int clientSock, char *file, char *msg, int log)
                     {
                         //printf("STUCK 17\n");
                         //printf("THIS IS DATA %d\n", rd[i]);
-                        if (counter >= fileSize)
-                        {
-                            for (int i = 0; i < 1000; i++)
-                            {
 
-                                printf("UH OH\n");
-                            }
-                            return "UH OH";
-                        }
                         dataRecv[counter] = rd[i];
                         counter++;
                     }
-                    printf("STUCK 18\n");
+                    //printf("STUCK 18\n");
                     w = send(clientSock, rd, keepRead, 0);
                     keepRead = read(op, rd, 10000);
                     //printf("IS this infinite loop prob not\n");
@@ -309,18 +301,15 @@ char *get(int clientSock, char *file, char *msg, int log)
             {
                 //if the buffer is not full after the first read
                 //strcat(dataRecv, rd);
-                printf("STUCK 20\n");
+                //printf("STUCK 20\n");
                 for (int i = 0; i < reading; i++)
                 {
                     //printf("STUCK 21\n");
-                    if (counter >= fileSize)
-                    {
-                        printf("THIS IS OUT OF BOUNDS CANT BE HERE\n");
-                    }
+
                     dataRecv[counter] = rd[i];
                     counter++;
                 }
-                printf("STUCK 22\n");
+                //printf("STUCK 22\n");
                 size_t sending = send(clientSock, rd, reading, 0);
                 if (sending == 0)
                 {
@@ -368,7 +357,7 @@ char *get(int clientSock, char *file, char *msg, int log)
 
 char *head(int clientSock, char *file, char *msg)
 {
-    printf("AM I STUCK IN HEAD\n");
+    //printf("AM I STUCK IN HEAD\n");
     //check if we have read permissions for file
     struct stat sta;
     int result = stat(file, &sta);
@@ -462,8 +451,8 @@ char *doServer(int client_sockd, char *msg, int log)
     // the first header contains the function name and the filename which we need
     //token = strtok_rm(buff, "\r\n\r\n", &tokSave);
     token = strtok_r(buff, "\r\n", &tokSave);
-    char bigTok[1000];
-    strcpy(bigTok, token);
+    // char bigTok[1000];
+    // strcpy(bigTok, token);
     //rintf("TOKEN HERE: %s\n", token);
     sscanf(token, "%s %s %s", func, fileName, serverVersion);
     //checks if first character is a / or not
@@ -519,7 +508,7 @@ char *doServer(int client_sockd, char *msg, int log)
     }
     //to move onto the next token
     token = strtok_r(NULL, "\r\n", &tokSave);
-    strcpy(bigTok, token);
+    //strcpy(bigTok, token);
     char header1[40];
     char header2[40];
     int boolSendData = 0;
@@ -573,7 +562,7 @@ char *doServer(int client_sockd, char *msg, int log)
     write(STDOUT_FILENO, buff, bytes);
 
     // once we parse through the headers we use the arguments that we made and we can go into one of these three functions
-    printf("THIS IS FILENAME: %s\n", fileName);
+    //printf("THIS IS FILENAME: %s\n", fileName);
     if (strcmp(func, "HEAD") == 0)
     {
         return head(client_sockd, fileName, msg);
@@ -654,18 +643,18 @@ void makeHex(char *buff, char *mesg)
 void *work(void *obj)
 {
     workerThread *wrkr = (workerThread *)obj;
-    printf("IN worker thread\n");
+    //printf("IN worker thread\n");
     int cSock;
     // i think they will all be writing to msg and it will mess it up you probably need to let each one have their own buffer
     char msg[20000];
     while (1)
     {
         pthread_mutex_lock(&mut);
-        printf("Worker: [%d]\n", wrkr->id);
-        printf("Requests:BEFORE WORK %d\n", requests);
+        //printf("Worker: [%d]\n", wrkr->id);
+        //printf("Requests:BEFORE WORK %d\n", requests);
         //if (requests == 0)
         //{
-        printf("OR COME IN HERE\n");
+        //printf("OR COME IN HERE\n");
         if (requests == 0)
         {
             pthread_cond_wait(&wrkr->cond, &mut);
@@ -673,13 +662,13 @@ void *work(void *obj)
         //}
         if (requests > 0)
         {
-            printf("I HAVE TO COME HERE RIGHT\n");
+            //printf("I HAVE TO COME HERE RIGHT\n");
             wrkr->clientSock = q[front];
-            printf("THIS IS MY CLIENT SOCK: %d\n", wrkr->clientSock);
+            //printf("THIS IS MY CLIENT SOCK: %d\n", wrkr->clientSock);
 
             trials++;
             cSock = q[front];
-            printf("THIS IS MY C SOCK: %d\n", cSock);
+            //printf("THIS IS MY C SOCK: %d\n", cSock);
             if (front == 999)
             {
                 front = 0;
@@ -739,7 +728,7 @@ void *work(void *obj)
 
             //sleep(5);
             wrkr->clientSock = -1;
-            printf("done with request\n");
+            //printf("done with request\n");
             if (secondPart != NULL)
             {
                 makeHex(b, secondPart);
@@ -756,10 +745,10 @@ void *work(void *obj)
 
             //printf("WHY IS B CHANGED: %s", b);
             requests--;
-            printf("Requests:AFTER SUB %d\n", requests);
+            //printf("Requests:AFTER SUB %d\n", requests);
 
             pthread_mutex_unlock(&mut);
-            printf("SERVER [%d] is done\n", wrkr->id);
+            //printf("SERVER [%d] is done\n", wrkr->id);
             if (wrkr->logFile != -1)
             {
                 pwrite(wrkr->logFile, a, sizeA, oSet);
@@ -790,7 +779,7 @@ int main(int argc, char *argv[])
     int numThreads = 4;
     char *logFile = NULL;
     //
-    printf("THis is first arg: %s\n", argv[0]);
+    //printf("THis is first arg: %s\n", argv[0]);
     /*if (strcmp(argv[0], "./httpserver") != 0)
     {
         dprintf(STDERR_FILENO, "Include httpserver\n");
@@ -925,8 +914,8 @@ int main(int argc, char *argv[])
         printf("[+] server is waiting...\n");
         int client_sockd = accept(server_sockd, &client_addr, &client_addrlen);
         requests++;
-        printf("Requests: AFter accept %d\n", requests);
-        printf("clientSock: %d\n", client_sockd);
+        //printf("Requests: AFter accept %d\n", requests);
+        //printf("clientSock: %d\n", client_sockd);
 
         target = counter % numThreads;
         //workers[target].clientSock = client_sockd;
@@ -945,7 +934,7 @@ int main(int argc, char *argv[])
             tail++;
         }
         pthread_cond_signal(&workers[target].cond);
-        printf("I DEF SINGAL TO WAke\n");
+        //printf("I DEF SINGAL TO WAke\n");
         counter++;
     }
     return 0;
