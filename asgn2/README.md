@@ -1,1 +1,1 @@
-edit me
+This program works for multiple curl requests. It logs well for character files but not binary files. This has truly been the hardest and most educational program I have written. If I were to have managed my time better I would have been able to complete it but alas I have not though I know im extremely close.
