@@ -1,0 +1,121 @@
+"--> Running asgn2.test.01 (GET a small binary file (with __-- in the name)) ... SUCCESS!
+--> Running asgn2.test.02 (GET a large binary file) ... SUCCESS!
+--> Running asgn2.test.03 (PUT a small binary file) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.03 are: ++++
+diff: ___0346abcdefghijzyxwvutsrq: Permission denied
+bash: line 7:  8818 Terminated              ./httpserver 8003
+
+++++ end ++++
+---- Test feedback ----
+Create a small binary file from /dev/urandom on the client side. Send a request using curl to PUT (-T) the contents of the file with a valid name on the server side. Compare the original file and the file created by the server with diff.
+---- end ----
+--> Running asgn2.test.04 (PUT a large binary file) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.04 are: ++++
+diff: 04------ijklm8DpVMwt: Permission denied
+bash: line 7:  8830 Terminated              ./httpserver 8004
+
+++++ end ++++
+---- Test feedback ----
+Create a large binary file (> 32KiB) from /dev/urandom on the client side. Send a request using curl to PUT (-T) the contents of the file with a valid name on the server side. Compare the original file and the file created by the server with diff.
+---- end ----
+--> Running asgn2.test.05 (Test HEAD request for a proper response header with 200 (OK)) ... SUCCESS!
+--> Running asgn2.test.06 (Test for 400 with a bad HTTP version (HTTP 1.0)) ... SUCCESS!
+--> Running asgn2.test.07 (Test if server creates default number of threads) ... SUCCESS!
+--> Running asgn2.test.08 (Test if server can read optional arguments in any order (examples from spec)) ... SUCCESS!
+--> Running asgn2.test.09 (Test if server can handle multiple GET requests simultaneously) ... SUCCESS!
+--> Running asgn2.test.10 (Test if server can handle a GET, HEAD, and PUT request simultaneously) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.10 are: ++++
+bash: line 9:  8953 Terminated              ./httpserver 8010 -N 2
+diff: 106J93qUQSY-6jmE4JzHey6qJqM: Permission denied
+
+++++ end ++++
+---- Test feedback ----
+Create 2 different files, 1 with a valid server side name. Send 1 GET and 1 HEAD (-I) request to the same server-side file using curl. Send 1 PUT request using curl with the -T option, specifying the other file created. Run these commands in parallel using &, and save their output using the -o <output-file> option. Use the keyword wait so that the script waits for all commands running in the background (&) to finish. Verify the output from each request with diff by comparing it to the original file. The response from the HEAD request should have the correct Content-Length corresponding to the size of the file requested.
+---- end ----
+--> Running asgn2.test.11 (Test if server can handle many requests greater than number of threads) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.11 are: ++++
+bash: line 14:  8972 Terminated              ./httpserver 8011 -N 3
+diff: 11oNUC7-y64ZKfw4LzK89-SPPZM: Permission denied
+
+++++ end ++++
+---- Test feedback ----
+Start the server with 3 threads. Create 8 different files with valid server-side names. Send 4 GET and 4 PUT requests using curl (save the output from GET requests using the -o option). Send them in parallel by adding & after each command. Send PUT requests using curl's -T option. After all commands listed use the keyword wait so that the script waits for all curl commands to finish. Verify the output files from GET requests with the orginal files using diff. Likewise for PUT requests, use diff on the original file and the file created by the server.
+---- end ----
+--> Running asgn2.test.12 (Test if server can log a single valid request) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.12 are: ++++
+bash: line 13:  9010 Terminated              ./httpserver 8012 -l test12-req.log
+
+++++ end ++++
+---- Test feedback ----
+Start the httpserver with logging enabled (-l <log-file>). Create a small file text file with a valid server-side name. Send a GET request using curl to that file. Create a correctly formatted log entry using printf to create the header for the request line and redirect that to a <log-entry>. As for creating the body simply append the output of hexdump hexdump -e '1/0 "%08_ad" 20/1 " %02x" 1/0 "\n"' <file-name> to the <log-file>. If the size of the file is not a multiple of 20 then hexdump will create extra whitespace characters, truncate those. Compare the contents of <log-entry> with <log-file>.
+---- end ----
+--> Running asgn2.test.13 (Test if server truncates log files everytime it starts) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.13 are: ++++
+bash: line 12:  9026 Terminated              ./httpserver 8013 -l test13-req.log
+bash: line 17:  9040 Terminated              ./httpserver 8013 -l test13-req.log
+
+++++ end ++++
+---- Test feedback ----
+Start the httpserver with logging enabled (-l <log-file>). Create a small file text file and an empty file using touch. Send a GET request using curl to that file. Create a correctly formatted log entry using printf to create the header for the request line and redirect that to a <log-file>. As for creating the body simply append the output of hexdump hexdump -e '1/0 "%08_ad" 20/1 " %02x" 1/0 "\n"' <file-name> to the <log-entry>. If the size of the file is not a multiple of 20 then hexdump will create extra whitespace characters, truncate those. Send a PUT request with curl (-T) with the contents being the text file. Shutdown the server using pkill httpserver. Save a copy of the orginal log file. Start another instance of httpserver with the same argument of -l as before. Then shut it down. Verify by compare the last log file created with an empty file as well as the contents of the first log file with <log-entry> using diff.
+---- end ----
+--> Running asgn2.test.14 (Test if server can log many valid requests sent simultaneously) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.14 are: ++++
+bash: line 23:  9050 Terminated              ./httpserver 8014 -l test14-req.log
+
+++++ end ++++
+---- Test feedback ----
+Start the server with logging enabled (-l <log-file>). Create 3 large files (> 32 KiB), 2 with valid server-side names. Create a correctly formatted log entry using printf to create the header for the request line and redirect that to a <log-entry> file. As for creating the body simply append (>>) the output of hexdump hexdump -e '1/0 "%08_ad" 20/1 " %02x" 1/0 "\n"' <file-name> to the <log-entry>. If the size of the file is not a multiple of 20 then hexdump will create extra whitespace characters, truncate those. Do this step for every request sent. Send 2 GET requests and 1 PUT (-T) request using curl. Run the curl commands with the -o option to save their output to a file and use the & operator to run them in parallel. Use the keyword wait so that the script waits until all curl requests running in the background (&) are done. After all contents of the files are logged use csplit to split up the entries in the log. Use the arguments --elide-empty-files <log-file> "/=/+1" "{*}". Verify the correctness with diff by comparing each output file to the <log-entry>'s created with hexdump.
+---- end ----
+--> Running asgn2.test.15 (Test if server can log many valid and invalid requests (400) with multiple requests sent) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.15 are: ++++
+Ncat: Idle timeout expired (2000 ms).
+Ncat: Idle timeout expired (2000 ms).
+Ncat: Idle timeout expired (2000 ms).
+bash: line 31:  9081 Terminated              ./httpserver 8015 -l test15-req.log
+
+++++ end ++++
+---- Test feedback ----
+Start the server with logging enabled (-l <log-file>). Create 3 large files (> 32 KiB), 2 with valid server-side names. Create a correctly formatted log entry using printf to create the header for the request line and redirect that to a <log-entry> file. As for creating the body simply append (>>) the output of hexdump hexdump -e '1/0 "%08_ad" 20/1 " %02x" 1/0 "\n"' <file-name> to the <log-entry>. If the size of the file is not a multiple of 20 then hexdump will create extra whitespace characters, truncate those. Do this step for every request sent. Create 3 log entries for the invalid requests using printf for a long resource name, a bad method, and an invalid character in the resource name. Send 2 GET requests and 1 PUT (-T) request using curl as well as 3 invalid requests using printf to format the request piped ( | ) into ncat. Run the curl commands with the -o option to save their output to a file and use the & operator to run each command in parallel. Use the keyword wait so that the script waits until all requests running in the background (&) are done. After all contents of the files are logged use csplit to split up the entries in the log. Use the arguments --elide-empty-files <log-file> "/=/+1" "{*}". Verify the correctness with diff by comparing each output file to the <log-entry>'s created with hexdump and printf.
+---- end ----
+--> Running asgn2.test.16 (Test if server can log many valid and invalid requests (400 and 404) with multiple requests sent) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.16 are: ++++
+Ncat: Idle timeout expired (2000 ms).
+Ncat: Idle timeout expired (2000 ms).
+bash: line 28:  9118 Terminated              ./httpserver 8016 -N 2 -l test16-req.log
+
+++++ end ++++
+---- Test feedback ----
+Start the server with logging enabled (-l <log-file>) and 2 threads (-N 2). Create 2 large files (> 32 KiB), 1 with a valid server-side name. Create a correctly formatted log entry using printf to create the header for the request line and redirect that to a <log-entry> file. As for creating the body simply append (>>) the output of hexdump hexdump -e '1/0 "%08_ad" 20/1 " %02x" 1/0 "\n"' <file-name> to the <log-entry>. If the size of the file is not a multiple of 20 then hexdump will create extra whitespace characters, truncate those. Do this step for every request sent. Create 2 log entries for the invalid requests using printf for a bad method, and a non-existent file. Send 1 GET request and 1 PUT (-T) request using curl as well as 2 invalid requests using printf to format the request piped ( | ) into ncat. The ncat requests consist of an invalid method and a non existent file. Run the curl commands with the -o option to save their output to a file and use the & operator to run each command (including ncat) in parallel. Use the keyword wait so that the script waits until all requests running in the background (&) are done. After all contents of the files are logged use csplit to split up the entries in the log. Use the arguments --elide-empty-files <log-file> "/=/+1" "{*}". Verify the correctness with diff by comparing each output file to the <log-entry>'s created with hexdump and printf.
+---- end ----
+--> Running asgn2.test.17 (GET request to 'healthcheck' with no logging enabled (404 error)) ... SUCCESS!
+--> Running asgn2.test.18 (GET request to 'healthcheck' with logging enabled) ... SUCCESS!
+--> Running asgn2.test.19 (Test 403 error for a request to 'healthcheck' ) ... SUCCESS!
+--> Running asgn2.test.20 (Test logging of many valid and invalid requests including a request to 'healthcheck' ) ... timed out after 15.00 seconds ... failure!
+---- Test feedback ----
+Start the server with logging enabled (-l <log-file>) and 2 threads (-N 2). Create 2 large binary files (> 32 KiB).  Create 1 empty file with a valid server side name using touch. Create a correctly formatted log entry using printf to create the header for the request line and redirect that to a <log-entry> file. As for creating the body simply append (>>) the output of hexdump hexdump -e '1/0 "%08_ad" 20/1 " %02x" 1/0 "\n"' <file-name> to the <log-entry>. If the size of the file is not a multiple of 20 then hexdump will create extra whitespace characters, truncate those. Do this step for every request sent (includeing a request to healthcheck which should have 32 0a 35 as the body logged). Create 2 log entries for the invalid requests using printf for a bad method, and a HEAD request to healthcheck (403). Send 1 HEAD (-I) request and 2 PUT (-T) requests using curl as well as 2 invalid requests using printf to format the request piped ( | ) into ncat. The ncat requests consist of an invalid method and a HEAD request to healthcheck. Use the & operator to run each command (including ncat) in parallel. Use the keyword wait so that the script waits until all requests running in the background (&) are done. After all commands have finished, send a GET request to healthcheck (2\n5 body) using curl. After all contents of the files are logged use csplit to split up the entries in the log. Use the arguments --elide-empty-files <log-file> "/=/+1" "{*}". Verify the correctness with diff by comparing each output file to the <log-entry>'s created with hexdump and printf.
+---- end ----
+--> Running asgn2.test.21 (Test 403 error (PUT) for a request to 'healthcheck' ) ... SUCCESS!
+--> Running asgn2.test.22 (Test 'healthcheck' value with only valid requests) ... timed out after 15.00 seconds ... failure!
+---- Test feedback ----
+Start the server with logging enabled (-l <log-file>). Create a 6 binary files with sizes ranging from 100 B to 1 MiB, 5 with valid server-side names. Create the contents of a correctly formatted healthcheck file (0\n6) using printf redirected (>) to a <hc-file>. Send 3 HEAD (-I) , 1 PUT (-T) , and 2 GET requests using curl, each to different resources. Use the & operator to run each request in parallel. Use the keyword wait so that the script waits until all requests running in the background (&) are done. After all commands have finished, send a GET request to healthcheck using curl. Verify that the response is 0\n6 with diff on the output from curl and <hc-file>.
+---- end ----
+--> Running asgn2.test.23 (Test 'healthcheck' value with only invalid requests) ... SUCCESS!
+--> Running asgn2.test.24 (Test 'healthcheck' value with many valid requests) ... SUCCESS!
+--> Running asgn2.test.25 (Test if a single GET request to 'healthcheck' is logged correctly) ... failure!
+++++ First 200 characters of standard error for test asgn2.test.25 are: ++++
+bash: line 13:  9377 Terminated              ./httpserver 8025 -l test25-req.log
+
+++++ end ++++
+---- Test feedback ----
+Start the server with logging enabled (-l <log-file>). Create a small text file with a valid server-side name. Create a correctly formatted log entry using printf to create the header for the request line and redirect that to a <log-entry> file. The body of the a request to healthcheck should have 31 0a 32 as the body logged. Send 1 valid HEAD (-I) request and 1 invalid HEAD (-I) request using curl and use the & operator to run each command in parallel. The invalid request is for a file that does not exist. Use the keyword wait so that the script waits until all requests running in the background (&) are done. After all commands have finished, send a GET request to healthcheck (1\n2 body) using curl. After all contents of the files are logged use csplit to split up the entries in the log. Use the arguments --elide-empty-files <log-file> "/=/+1" "{*}". Verify the correctness with diff by comparing each output file to the <log-entry> created with printf.
+---- end ----
+--> Running asgn2.test.26 (Test if a single HEAD request is logged correctly) ... SUCCESS!
+--> Running asgn2.test.27 (Test if server can handle multiple GET requests to the same resource simultaniously) ... timed out after 15.00 seconds ... failure!
+---- Test feedback ----
+Start the server with logging enabled (-l <log-file>) and 2 threads (-N 2). Create a 1 MiB binary file. Send 4 valid HEAD (-I) requests and 4 valid GET requests to the same resource using curl with the -o option. Redirect the output of each curl request to a file. Use the & operator to run each command in parallel. The invalid request is for a file that does not exist. Use the keyword wait so that the script waits until all requests running in the background (&) are done. Verify the contents of the GET request are the same using diff and verify that responses to the HEAD request has the correct file size in the Content-Length header.
+---- end ----
+--> Running asgn2.test.28 (Test if server can handle multiple requests much larger (15:1 ratio) than the number of threads) ... timed out after 15.00 seconds ... failure!
+---- Test feedback ----
+Start the server with no logging enabled and 2 threads (-N 2). Create 30 small files from 100 B to 30,000 B. You can create these files in a for loop. Send 15 HEAD (-I) request and 15 GET requests to different resoruces using curl with the -o option. Use the & operator to run each request in parallel. Use the keyword wait so that the script waits until all requests running in the background (&) are done. Verify the contents of the GET requests using diff by comparing the original file. Verify that each response to a HEAD request has a content-length header that has the correct value which matches the file size of the resource in the request.
+---- end ----
+"
