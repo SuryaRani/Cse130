@@ -7,7 +7,34 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <pthread.h>
+typedef struct bridge_t
+{
+    int client;
+    int server;
 
+} bridge;
+typedef struct server_info_t
+{
+    int port;
+    int fd;
+    bool alive;
+    int totalReq;
+    int errors;
+    pthread_t workId;
+} ServerInfo;
+
+typedef struct servers_t
+{
+    int numServ;
+    ServerInfo *servs;
+    pthread_mutex_t mut;
+} Servers;
+
+Servers servers;
+
+pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 /*
  * client_connect takes a port number and establishes a connection as a client.
  * connectport: port number of server to connect to
@@ -104,8 +131,12 @@ int bridge_connections(int fromfd, int tofd)
  * is interrupted. It also prints a message if both channels are idle.
  * sockfd1, sockfd2: valid sockets
  */
-void bridge_loop(int sockfd1, int sockfd2)
+void bridge_loop(int first, int second)
 {
+    printf("DO i go into bridge\n");
+
+    int sockfd1 = first;
+    int sockfd2 = second;
     fd_set set;
     struct timeval timeout;
 
@@ -154,86 +185,131 @@ void bridge_loop(int sockfd1, int sockfd2)
     }
 }
 
-char *getHealth(int fd)
+void *work(void *obj)
 {
+    printf("HoW MANY TIMES I GET HERE\n");
+    bridge *b_pointer = (bridge *)obj;
+    bridge b = *b_pointer;
+    pthread_mutex_lock(&mut);
+    printf("THis is client: %d\n", b.client);
+    printf("THis is server: %d\n", b.server);
+
+    bridge_loop(b.client, b.server);
+
+    pthread_mutex_unlock(&mut);
+}
+
+char *getHealth(int fd, int port)
+
+{
+    printf("Here 9\n");
     char healthMsg[100];
-    sprintf(healthMsg, "GET /healthcheck HTTP/1.1\r\nHost: localhost:%d\r\nUser-Agent: curl/7.58.0\r\nAccept:*/*\r\n\r\n", fd);
+    sprintf(healthMsg, "GET /healthcheck HTTP/1.1\r\nHost: localhost:%d\r\nUser-Agent: curl/7.58.0\r\nAccept:*/*\r\n\r\n", port);
     send(fd, healthMsg, sizeof(healthMsg) / sizeof(char), 0);
     char *recieved = malloc(1000);
+    printf("Here 10\n");
     ssize_t bytes = recv(fd, recieved, 1000, 0);
     if (bytes == -1)
     {
         return "FAIL";
     }
     recieved[bytes] = 0;
+    printf("this is recieved: %s\n", recieved);
+    printf("Here 11\n");
     return recieved;
 }
 
-void parseHealth(int err[], int req[], int count, int fd)
+void parseHealth(int i)
 {
-    char *healthMsg = getHealth(fd);
+    printf("Here 8\n");
+    char *healthMsg = getHealth(servers.servs[i].fd, servers.servs[i].port);
+    printf("Here 12\n");
     if (strcmp(healthMsg, "FAIL") == 0)
     {
-        err[count] = -1;
-        req[count] = -1;
+        servers.servs[i].errors = -1;
+        servers.servs[i].totalReq = -1;
     }
     //this might fail because im not checking for format of health check implement this later
     char *tok = strtok(healthMsg, "\r\n");
-    err[count] = atoi(tok);
-    tok = strtok(NULL, "\r\n");
-    req[count] = atoi(tok);
+
+    if (tok != NULL)
+    {
+        printf("Here 13\n");
+        servers.servs[i].errors = atoi(tok);
+        printf("Here 14\n");
+        tok = strtok(NULL, "\r\n");
+        if (tok != NULL)
+        {
+
+            printf("Here 15\n");
+            servers.servs[i].totalReq = atoi(tok);
+        }
+    }
+
+    printf("Here 16\n");
 }
-int prioritize(int err[], int req[], int health[])
+int prioritize()
 {
+
     int least = __INT_MAX__;
     int itemNum = -1;
     int success = -1;
-    for (int i = 0; i < sizeof(req[i]) / sizeof(int); i++)
+    for (int i = 0; i < servers.numServ; i++)
     {
-        if (req[i] < least)
+        if (servers.servs[i].totalReq < least)
         {
             itemNum = i;
-            least = req[i];
-            success = req[i] - err[i];
+            least = servers.servs[i].totalReq;
+            success = servers.servs[i].totalReq - servers.servs[i].errors;
         }
-        else if (req[i] == least)
+        else if (servers.servs[i].totalReq == least)
         {
-            if ((req[i] - err[i]) < success)
+            if ((servers.servs[i].totalReq - servers.servs[i].errors) < success)
             {
                 itemNum = i;
-                least = req[i];
-                success = req[i] - err[i];
+                least = servers.servs[i].totalReq;
+                success = servers.servs[i].totalReq - servers.servs[i].errors;
             }
         }
     }
     return itemNum;
 }
 
-int checkHealth(int health[], int serv[])
+void checkHealth()
 {
-    int err[1000];
-    int req[1000];
-    for (int i = 0; i < sizeof(serv[i]) / sizeof(int); i++)
+    printf("Here 6\n");
+    for (int i = 0; i < servers.numServ; i++)
     {
-        parseHealth(err, req, i, serv[i]);
-        if (err[i] == -1 && req[i] == -1)
+
+        parseHealth(i);
+        printf("Here 7\n");
+        // i might need to check if server is alive earlier than this maybe right when connecting
+        if (servers.servs[i].errors == -1 && servers.servs[i].totalReq == -1)
         {
-            health[i] = -1;
+            servers.servs[i].alive = false;
         }
         else
         {
-            health[i] = 1;
+            servers.servs[i].alive = true;
         }
     }
-    int priority = -1;
-    priority = prioritize(err, req, health);
-    return priority;
+}
+void serverInit(int counter, int ports[])
+{
+    servers.numServ = counter;
+    servers.servs = malloc(servers.numServ * sizeof(ServerInfo));
+    pthread_mutex_init(&servers.mut, NULL);
+    for (int i = 0; i < counter; i++)
+    {
+        servers.servs[i].port = ports[i];
+        servers.servs[i].alive = false;
+    }
 }
 
 int main(int argc, char **argv)
 {
     int connfd, listenfd, acceptfd;
-    int threads = -1;
+    int threads = 4;
     int reqHealth = -1;
     int ports[argc - 2];
     int counter = 0;
@@ -279,29 +355,68 @@ int main(int argc, char **argv)
 
     // Remember to validate return values
     // You can fail tests for not validating
-    int servers[counter];
+    //int servers[counter];
     //int clients[counter];
     int health[counter];
+    serverInit(counter, ports);
     for (int i = 0; i < counter; i++)
     {
 
+        printf("HERE 1\n");
         connectport = ports[i];
+        printf("HERE 2\n");
 
         if ((connfd = client_connect(connectport)) < 0)
-            err(1, "failed connecting");
-        if ((listenfd = server_listen(listenport)) < 0)
-            err(1, "failed listening");
-        if ((acceptfd = accept(listenfd, NULL, NULL)) < 0)
-            err(1, "failed accepting");
+        {
 
-        servers[i] = connfd;
+            servers.servs[i].alive = false;
+            err(1, "failed connecting");
+        }
+        else
+        {
+            servers.servs[i].alive = true;
+        }
+
+        printf("HERE 3\n");
+
+        servers.servs[i].fd = connfd;
+        printf("HERE 4\n");
+
         //clients[i] = acceptfd;
 
         // This is a sample on how to bridge connections.
         // Modify as needed.
     }
+    if ((listenfd = server_listen(listenport)) < 0)
+        err(1, "failed listening");
+    if ((acceptfd = accept(listenfd, NULL, NULL)) < 0)
+        err(1, "failed accepting");
     int priority = 0;
-    priority = checkHealth(health, servers);
+    printf("HERE 5s\n");
 
-    bridge_loop(acceptfd, servers[priority]);
+    checkHealth(health, servers, ports);
+    priority = prioritize();
+    printf("NOT GETTInG HERE\n");
+    printf("servers: %d\n", servers.servs[priority].port);
+    bridge bridge;
+    bridge.client = acceptfd;
+    bridge.server = servers.servs[priority].fd;
+
+    printf("THis is client before : %d\n", bridge.client);
+    printf("THis is server before: %d\n", bridge.server);
+    int err = 0;
+    for (int i = 0; i < threads; i++)
+    {
+        //printf("loop: %d\n", i);
+        err = pthread_create(&servers.servs[i].workId, NULL, work, &bridge);
+        if (err)
+        {
+            dprintf(STDERR_FILENO, "ERROR setting up thread\n");
+            return EXIT_FAILURE;
+        }
+
+        pthread_join(servers.servs[i].workId, NULL);
+    }
+
+    //bridge_loop(acceptfd, servers[priority]);
 }
