@@ -43,6 +43,8 @@ ssize_t qSize;
 int front = 0;
 int tail = 0;
 
+int requests = 0;
+
 bool wait = false;
 bool canStart = false;
 
@@ -238,6 +240,8 @@ char *getHealth(int fd, int port)
 {
     printf("Here 9\n");
     char healthMsg[100];
+    printf("THIS IS THE SERVER FD: %d\n", fd);
+    printf("THIS IS THE Port: %d\n", port);
     sprintf(healthMsg, "GET /healthcheck HTTP/1.1\r\n\r\n");
     send(fd, healthMsg, sizeof(healthMsg) / sizeof(char), 0);
     char *recieved = malloc(1000);
@@ -249,7 +253,7 @@ char *getHealth(int fd, int port)
         return "FAIL";
     }
     recieved[bytes] = 0;
-    printf("this is recieved: %s\n", recieved);
+    //printf("this is recieved: %s\n", recieved);
     printf("Here 11\n");
     return recieved;
 }
@@ -257,6 +261,7 @@ char *getHealth(int fd, int port)
 void parseHealth(int i)
 {
     printf("Here 8\n");
+
     char *healthMsg = getHealth(servers.servs[i].fd, servers.servs[i].port);
     printf("Here 12\n");
     if (strcmp(healthMsg, "FAIL") == 0)
@@ -309,19 +314,22 @@ int prioritize()
     int success = -1;
     for (int i = 0; i < servers.numServ; i++)
     {
-        if (servers.servs[i].totalReq < least)
+        if (servers.servs[i].alive == true)
         {
-            itemNum = i;
-            least = servers.servs[i].totalReq;
-            success = servers.servs[i].totalReq - servers.servs[i].errors;
-        }
-        else if (servers.servs[i].totalReq == least)
-        {
-            if ((servers.servs[i].totalReq - servers.servs[i].errors) < success)
+            if (servers.servs[i].totalReq < least)
             {
                 itemNum = i;
                 least = servers.servs[i].totalReq;
                 success = servers.servs[i].totalReq - servers.servs[i].errors;
+            }
+            else if (servers.servs[i].totalReq == least)
+            {
+                if ((servers.servs[i].totalReq - servers.servs[i].errors) < success)
+                {
+                    itemNum = i;
+                    least = servers.servs[i].totalReq;
+                    success = servers.servs[i].totalReq - servers.servs[i].errors;
+                }
             }
         }
     }
@@ -350,7 +358,9 @@ void checkHealth()
 
 void *timedHealth(void *obj)
 {
-    int numRequests = (int)obj;
+    //int numRequests = (int)obj;
+    bridge *b_pointer = (bridge *)obj;
+    bridge b = *b_pointer;
 
     struct timespec ts;
     struct timeval now;
@@ -362,23 +372,47 @@ void *timedHealth(void *obj)
         gettimeofday(&now, NULL);
         ts.tv_sec = now.tv_sec + 5;
         printf("IM IN HEALTH\n");
-        if (wait == false)
-        {
-            pthread_cond_wait(&healthCond, &healthMut);
-        }
-        else
-        {
-            pthread_cond_timedwait(&healthCond, &healthMut, &ts);
-        }
+
+        pthread_cond_timedwait(&healthCond, &healthMut, &ts);
 
         printf("IT HAS BEEN 5 seconds\n");
 
         checkHealth();
         priority = prioritize();
+        wait = false;
         canStart = true;
         printf("THIS IS PRITIORTY in health %d\n", priority);
+        for (int i = 0; i < servers.numServ; i++)
+        {
+            printf("PRIORITY PORT, ERRRO, TOTAL: %d %d %d\n", servers.servs[i].port, servers.servs[i].errors, servers.servs[i].totalReq);
+        }
 
         pthread_mutex_unlock(&healthMut);
+        int connectport;
+        int connfd;
+        for (int i = 0; i < servers.numServ; i++)
+        {
+
+            printf("HERE 1\n");
+            connectport = servers.servs[i].port;
+            printf("HERE 2\n");
+
+            if ((connfd = client_connect(connectport)) < 0)
+            {
+
+                servers.servs[i].alive = false;
+                err(1, "failed connecting");
+            }
+            else
+            {
+                servers.servs[i].alive = true;
+            }
+
+            printf("HERE 3\n");
+
+            servers.servs[i].fd = connfd;
+            servers.servs[i].port = servers.servs[i].port;
+        }
     }
 }
 void serverInit(int counter, int ports[])
@@ -476,10 +510,10 @@ int main(int argc, char **argv)
     if ((listenfd = server_listen(listenport)) < 0)
         err(1, "failed listening");
 
-    pthread_create(&threadId, NULL, timedHealth, reqHealth);
+    pthread_create(&threadId, NULL, timedHealth, &bridge);
 
-    int count = 0;
-    int target = 0;
+    //int count = 0;
+    //int target = 0;
     while (1)
     {
         for (int i = 0; i < counter; i++)
@@ -517,6 +551,16 @@ int main(int argc, char **argv)
             err(1, "failed accepting");
         printf("CONNECTED TO cient: %d\n", acceptfd);
         q[tail] = acceptfd;
+        requests++;
+        if (reqHealth > 0)
+        {
+            if (requests == reqHealth)
+            {
+                requests = 0;
+                pthread_cond_signal(&healthCond);
+            }
+        }
+
         if (tail == 999 && front == 0)
         {
             dprintf(STDERR_FILENO, "QUEUE FULL OF REQUESTs\n");
@@ -531,7 +575,11 @@ int main(int argc, char **argv)
             tail++;
         }
         printf("THIS IS PRIOROTIY: %d\n", priority);
-        printf("THIS IS SERVER PORT: %d\n", servers.servs[priority].port);
+        for (int i = 0; i < servers.numServ; i++)
+        {
+            printf("PRIORITY PORT, ERRRO, TOTAL: %d %d %d\n", servers.servs[i].port, servers.servs[i].errors, servers.servs[i].totalReq);
+        }
+
         //pthread_cond_signal(&cond);
         wait = true;
         //pthread_cond_signal(&healthCond);
@@ -540,6 +588,7 @@ int main(int argc, char **argv)
         printf("HERE 5s\n");
 
         bridge_loop(acceptfd, servers.servs[priority].fd);
+        pthread_cond_signal(&healthCond);
     }
 
     //checkHealth();
