@@ -126,7 +126,7 @@ int bridge_connections(int fromfd, int tofd)
     }
     recvline[n] = '\0';
     printf("%s", recvline);
-    sleep(1);
+    //sleep(1);
     n = send(tofd, recvline, n, 0);
     if (n < 0)
     {
@@ -535,6 +535,8 @@ int main(int argc, char **argv)
         //pthread_cond_signal(&cond);
         wait = true;
         //pthread_cond_signal(&healthCond);
+        //checkHealth();
+        //priority = prioritize();
         printf("HERE 5s\n");
 
         bridge_loop(acceptfd, servers.servs[priority].fd);
