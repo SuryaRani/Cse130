@@ -53,6 +53,9 @@ pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t healthMut = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t healthCond = PTHREAD_COND_INITIALIZER;
+
+const char internalErorrMesg[] = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
+
 /*
  * client_connect takes a port number and establishes a connection as a client.
  * connectport: port number of server to connect to
@@ -417,7 +420,7 @@ void *timedHealth(void *obj)
             {
 
                 servers.servs[i].alive = false;
-                err(1, "failed connecting");
+                //err(1, "failed connecting");
             }
             else
             {
@@ -429,6 +432,19 @@ void *timedHealth(void *obj)
             servers.servs[i].fd = connfd;
             servers.servs[i].port = servers.servs[i].port;
         }
+        int isDead = 0;
+        for (int i = 0; i < servers.numServ; i++)
+        {
+            if (servers.servs[i].alive == false)
+            {
+                isDead++;
+            }
+        }
+        if (isDead == servers.numServ)
+        {
+            send(q[front], internalErorrMesg, strlen(internalErorrMesg), 0);
+        }
+        isDead = 0;
     }
 }
 void serverInit(int counter, int ports[])
@@ -541,7 +557,7 @@ int main(int argc, char **argv)
         {
 
             servers.servs[i].alive = false;
-            err(1, "failed connecting");
+            //err(1, "failed connecting");
         }
         else
         {
@@ -560,6 +576,7 @@ int main(int argc, char **argv)
         // This is a sample on how to bridge connections.
         // Modify as needed.
     }
+
     while (1)
     {
 
@@ -596,6 +613,19 @@ int main(int argc, char **argv)
         {
             tail++;
         }
+        int isDead = 0;
+        for (int i = 0; i < servers.numServ; i++)
+        {
+            if (servers.servs[i].alive == false)
+            {
+                isDead++;
+            }
+        }
+        if (isDead == servers.numServ)
+        {
+            send(acceptfd, internalErorrMesg, strlen(internalErorrMesg), 0);
+        }
+        isDead = 0;
 
         //pthread_cond_signal(&cond);
         wait = true;
