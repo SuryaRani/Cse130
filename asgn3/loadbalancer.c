@@ -116,6 +116,7 @@ int server_listen(int port)
 int bridge_connections(int fromfd, int tofd)
 {
     char recvline[100];
+    printf("THIS IS FROM: %d AND TO: %d\n", fromfd, tofd);
     int n = recv(fromfd, recvline, 100, 0);
     if (n < 0)
     {
@@ -233,9 +234,9 @@ void *work(void *obj)
         // i need to wait longer here just for the first time throuhg to be able to prioritize
         printf("THis is client: %d\n", b.client);
         printf("THis is server: %d\n", b.server);
-        while (canStart == false)
+        /*while (canStart == false)
         {
-        }
+        }*/
 
         bridge_loop(b.client, b.server);
 
@@ -253,8 +254,11 @@ char *getHealth(int fd, int port)
     sprintf(healthMsg, "GET /healthcheck HTTP/1.1\r\n\r\n");
     send(fd, healthMsg, sizeof(healthMsg) / sizeof(char), 0);
     char *recieved = malloc(1000);
+    printf("FD BEFORE 10: %d\n", fd);
     printf("Here 10\n");
+    printf("FD AFTEr 10: %d\n", fd);
     ssize_t bytes = recv(fd, recieved, 1000, 0);
+    printf("bytes: %ld\n", bytes);
     if (bytes == -1)
     {
         printf("ITS FAILING\n");
@@ -276,6 +280,9 @@ void parseHealth(int i)
     {
         servers.servs[i].errors = -1;
         servers.servs[i].totalReq = -1;
+
+        servers.servs[i].alive = false;
+        return;
     }
     //this might fail because im not checking for format of health check implement this later
     char *tok = strtok(healthMsg, "\n");
@@ -295,11 +302,6 @@ void parseHealth(int i)
         {
             printf("TOK 2: %s\n", tok);
             sscanf(tok, "%d", &tot);
-
-            if (err == -1 || tot == -1)
-            {
-                servers.servs[i].alive = false;
-            }
 
             printf("THIS IS ERRORS: %d\n", err);
             printf("THIS IS ToTAL: %d\n", tot);
@@ -349,17 +351,21 @@ void checkHealth()
     printf("Here 6\n");
     for (int i = 0; i < servers.numServ; i++)
     {
-
-        parseHealth(i);
-        printf("Here 7\n");
-        // i might need to check if server is alive earlier than this maybe right when connecting
-        if (servers.servs[i].errors == -1 && servers.servs[i].totalReq == -1)
+        //this might cause problems here i might not be checking if they get back online but it might
+        //be checking in the timedHealth loop when its connecting
+        if (servers.servs[i].alive == true)
         {
-            servers.servs[i].alive = false;
-        }
-        else
-        {
-            servers.servs[i].alive = true;
+            parseHealth(i);
+            printf("Here 7\n");
+            // i might need to check if server is alive earlier than this maybe right when connecting
+            if (servers.servs[i].errors == -1 && servers.servs[i].totalReq == -1)
+            {
+                servers.servs[i].alive = false;
+            }
+            else
+            {
+                servers.servs[i].alive = true;
+            }
         }
     }
 }
@@ -524,39 +530,39 @@ int main(int argc, char **argv)
 
     //int count = 0;
     //int target = 0;
+    for (int i = 0; i < counter; i++)
+    {
+
+        printf("HERE 1\n");
+        connectport = ports[i];
+        printf("HERE 2\n");
+
+        if ((connfd = client_connect(connectport)) < 0)
+        {
+
+            servers.servs[i].alive = false;
+            err(1, "failed connecting");
+        }
+        else
+        {
+            servers.servs[i].alive = true;
+        }
+
+        printf("HERE 3\n");
+
+        servers.servs[i].fd = connfd;
+        servers.servs[i].port = ports[i];
+        printf("CONNECTED TO PORT: %d\n", connfd);
+        printf("HERE 4\n");
+
+        //clients[i] = acceptfd;
+
+        // This is a sample on how to bridge connections.
+        // Modify as needed.
+    }
     while (1)
     {
 
-        for (int i = 0; i < counter; i++)
-        {
-
-            printf("HERE 1\n");
-            connectport = ports[i];
-            printf("HERE 2\n");
-
-            if ((connfd = client_connect(connectport)) < 0)
-            {
-
-                servers.servs[i].alive = false;
-                err(1, "failed connecting");
-            }
-            else
-            {
-                servers.servs[i].alive = true;
-            }
-
-            printf("HERE 3\n");
-
-            servers.servs[i].fd = connfd;
-            servers.servs[i].port = ports[i];
-            printf("CONNECTED TO PORT: %d\n", connfd);
-            printf("HERE 4\n");
-
-            //clients[i] = acceptfd;
-
-            // This is a sample on how to bridge connections.
-            // Modify as needed.
-        }
         printf("Here 20\n");
 
         if ((acceptfd = accept(listenfd, NULL, NULL)) < 0)
@@ -590,11 +596,6 @@ int main(int argc, char **argv)
         {
             tail++;
         }
-        printf("THIS IS PRIOROTIY: %d\n", priority);
-        for (int i = 0; i < servers.numServ; i++)
-        {
-            printf("PRIORITY PORT, ERRRO, TOTAL: %d %d %d\n", servers.servs[i].port, servers.servs[i].errors, servers.servs[i].totalReq);
-        }
 
         //pthread_cond_signal(&cond);
         wait = true;
@@ -602,8 +603,28 @@ int main(int argc, char **argv)
         //checkHealth();
         //priority = prioritize();
         printf("HERE 5s\n");
+        /*checkHealth();
+        priority = prioritize();*/
 
+        printf("Priority is: %d\n", priority);
         bridge_loop(acceptfd, servers.servs[priority].fd);
+        connectport = servers.servs[priority].port;
+
+        if ((connfd = client_connect(connectport)) < 0)
+        {
+
+            servers.servs[priority].alive = false;
+            err(1, "failed connecting");
+        }
+        else
+        {
+            servers.servs[priority].alive = true;
+        }
+
+        printf("HERE 3\n");
+
+        servers.servs[priority].fd = connfd;
+        servers.servs[priority].port = ports[priority];
         //pthread_cond_signal(&healthCond);
     }
 
