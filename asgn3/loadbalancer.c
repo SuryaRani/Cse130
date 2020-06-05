@@ -48,7 +48,6 @@ int requests = 0;
 bool wait = false;
 bool canStart = false;
 bool healthDone = false;
-bool startHealth = true;
 
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -250,7 +249,6 @@ char *getHealth(int fd, int port)
 {
     printf("Here 9\n");
     char healthMsg[100];
-    char secondRecv[100];
     printf("THIS IS THE SERVER FD: %d\n", fd);
     printf("THIS IS THE Port: %d\n", port);
     sprintf(healthMsg, "GET /healthcheck HTTP/1.1\r\n\r\n");
@@ -260,11 +258,6 @@ char *getHealth(int fd, int port)
     printf("Here 10\n");
     printf("FD AFTEr 10: %d\n", fd);
     ssize_t bytes = recv(fd, recieved, 1000, 0);
-    /*if (bytes < 2)
-    {
-        recv(fd, secondRecv, 100, 0);
-        strcat(recieved, secondRecv);
-    }*/
     printf("bytes: %ld\n", bytes);
     if (bytes == -1)
     {
@@ -411,12 +404,8 @@ void *timedHealth(void *obj)
         }
 
         pthread_mutex_unlock(&healthMut);
-        startHealth = true;
         int connectport;
         int connfd;
-        while (startHealth == false)
-        {
-        }
         for (int i = 0; i < servers.numServ; i++)
         {
 
@@ -440,7 +429,6 @@ void *timedHealth(void *obj)
             servers.servs[i].fd = connfd;
             servers.servs[i].port = servers.servs[i].port;
         }
-        startHealth = false;
     }
 }
 void serverInit(int counter, int ports[])
@@ -582,7 +570,6 @@ int main(int argc, char **argv)
             printf("THIS FAILS\n");
             err(1, "failed accepting");
         }
-        startHealth = false;
 
         printf("CONNECTED TO cient: %d\n", acceptfd);
         q[tail] = acceptfd;
@@ -620,9 +607,7 @@ int main(int argc, char **argv)
         priority = prioritize();*/
 
         printf("Priority is: %d\n", priority);
-
         bridge_loop(acceptfd, servers.servs[priority].fd);
-        startHealth = true;
         connectport = servers.servs[priority].port;
 
         if ((connfd = client_connect(connectport)) < 0)
