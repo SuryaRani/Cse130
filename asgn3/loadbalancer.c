@@ -47,6 +47,7 @@ int requests = 0;
 
 bool wait = false;
 bool canStart = false;
+bool healthDone = false;
 
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -127,7 +128,7 @@ int bridge_connections(int fromfd, int tofd)
         return 0;
     }
     recvline[n] = '\0';
-    printf("%s", recvline);
+    //printf("%s", recvline);
     //sleep(1);
     n = send(tofd, recvline, n, 0);
     if (n < 0)
@@ -210,29 +211,36 @@ void *work(void *obj)
     printf("MAybe I ASSUME\n");
 
     pthread_mutex_lock(&mut);
-    pthread_cond_wait(&cond, &mut);
-
-    printf("THIS IS HERE I ASSUME\n");
-    b.client = q[front];
-    if (front == 999)
+    if (front == tail)
     {
-        front = 0;
+
+        pthread_cond_wait(&cond, &mut);
     }
     else
     {
-        front++;
-    }
-    b.server = servers.servs[priority].fd;
-    // i need to wait longer here just for the first time throuhg to be able to prioritize
-    printf("THis is client: %d\n", b.client);
-    printf("THis is server: %d\n", b.server);
-    while (canStart == false)
-    {
-    }
 
-    bridge_loop(b.client, b.server);
+        printf("THIS IS HERE I ASSUME\n");
+        b.client = q[front];
+        if (front == 999)
+        {
+            front = 0;
+        }
+        else
+        {
+            front++;
+        }
+        b.server = servers.servs[priority].fd;
+        // i need to wait longer here just for the first time throuhg to be able to prioritize
+        printf("THis is client: %d\n", b.client);
+        printf("THis is server: %d\n", b.server);
+        while (canStart == false)
+        {
+        }
 
-    pthread_mutex_unlock(&mut);
+        bridge_loop(b.client, b.server);
+
+        pthread_mutex_unlock(&mut);
+    }
 }
 
 char *getHealth(int fd, int port)
@@ -324,7 +332,7 @@ int prioritize()
             }
             else if (servers.servs[i].totalReq == least)
             {
-                if ((servers.servs[i].totalReq - servers.servs[i].errors) < success)
+                if ((servers.servs[i].totalReq - servers.servs[i].errors) >= success)
                 {
                     itemNum = i;
                     least = servers.servs[i].totalReq;
@@ -366,6 +374,7 @@ void *timedHealth(void *obj)
     struct timeval now;
     while (true)
     {
+        printf("DO I NOT HOLD ONTO LOCK FOR SOME REASON\n");
         pthread_mutex_lock(&healthMut);
         memset(&ts, 0, sizeof(ts));
 
@@ -379,6 +388,7 @@ void *timedHealth(void *obj)
 
         checkHealth();
         priority = prioritize();
+
         wait = false;
         canStart = true;
         printf("THIS IS PRITIORTY in health %d\n", priority);
@@ -408,7 +418,7 @@ void *timedHealth(void *obj)
                 servers.servs[i].alive = true;
             }
 
-            printf("HERE 3\n");
+            printf("HERE 23\n");
 
             servers.servs[i].fd = connfd;
             servers.servs[i].port = servers.servs[i].port;
@@ -516,6 +526,7 @@ int main(int argc, char **argv)
     //int target = 0;
     while (1)
     {
+
         for (int i = 0; i < counter; i++)
         {
 
@@ -538,7 +549,7 @@ int main(int argc, char **argv)
 
             servers.servs[i].fd = connfd;
             servers.servs[i].port = ports[i];
-            printf("CONNECTED TO PORT: %d\n", ports[i]);
+            printf("CONNECTED TO PORT: %d\n", connfd);
             printf("HERE 4\n");
 
             //clients[i] = acceptfd;
@@ -546,9 +557,14 @@ int main(int argc, char **argv)
             // This is a sample on how to bridge connections.
             // Modify as needed.
         }
+        printf("Here 20\n");
 
         if ((acceptfd = accept(listenfd, NULL, NULL)) < 0)
+        {
+            printf("THIS FAILS\n");
             err(1, "failed accepting");
+        }
+
         printf("CONNECTED TO cient: %d\n", acceptfd);
         q[tail] = acceptfd;
         requests++;
@@ -588,7 +604,7 @@ int main(int argc, char **argv)
         printf("HERE 5s\n");
 
         bridge_loop(acceptfd, servers.servs[priority].fd);
-        pthread_cond_signal(&healthCond);
+        //pthread_cond_signal(&healthCond);
     }
 
     //checkHealth();
