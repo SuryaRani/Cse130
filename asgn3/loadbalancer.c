@@ -613,7 +613,8 @@ int main(int argc, char **argv)
         if ((connfd = client_connect(connectport)) < 0)
         {
 
-            servers.servs[priority].alive = false err(1, "failed connecting");
+            servers.servs[priority].alive = false;
+            err(1, "failed connecting");
         }
         else
         {
