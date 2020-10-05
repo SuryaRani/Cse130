@@ -1,0 +1,313 @@
+j
+:wq
+dfkljskladjfl;aksdjf k;adjskfj;aklsdjfkl;jasdfkjaskd;fjaksjdfklasjdflkjaksdlfjasdkjf;ajsdfjklasdkjlfjasd;aklsfjklasdfkjasdk;lfjdsjklsdfkjladsjkadsjkfjdsdsakjladskjlasd;kfjla;sdfjasdk;flj;skaldfjk;lasdfjksadfjks;fLast login: Tue May 12 17:03:38 on console
+Suryas-MBP-2:~ suryarani$ ls
+Applications		Movies			ce12
+Desktop			Music			cse101
+Documents		Pictures		eclipse
+Downloads		Public			eclipse-workspace
+Library			VirtualBox VMs
+Suryas-MBP-2:~ suryarani$ cd cse101/
+Suryas-MBP-2:cse101 suryarani$ ls
+Lex.c		List.h		ListTest.c	Sparse.c
+List.c		ListClient.c	README
+Suryas-MBP-2:cse101 suryarani$ vmi Lex.c 
+-bash: vmi: command not found
+Suryas-MBP-2:cse101 suryarani$ vim Lex.c 
+Suryas-MBP-2:cse101 suryarani$ ls
+Lex.c		List.h		ListTest.c	Sparse.c
+List.c		ListClient.c	README
+Suryas-MBP-2:cse101 suryarani$ cd ..
+Suryas-MBP-2:~ suryarani$ ls
+Applications		Movies			ce12
+Desktop			Music			cse101
+Documents		Pictures		eclipse
+Downloads		Public			eclipse-workspace
+Library			VirtualBox VMs
+Suryas-MBP-2:~ suryarani$ cd Documents/
+Suryas-MBP-2:Documents suryarani$ ls
+CSE130				WestmoorLease2020.pdf
+Cse 107 hw1.pdf			cs12b
+MuseScore3			cse101
+My Class Schedule.webarchive	cse111
+UCSC Reference Release.pdf	personal doc.pdf
+Unknown.jpg
+Suryas-MBP-2:Documents suryarani$ cd CSE130/
+Suryas-MBP-2:CSE130 suryarani$ ls
+VMshare			personal doc.pdf
+Suryas-MBP-2:CSE130 suryarani$ cd VMshare/
+Suryas-MBP-2:VMshare suryarani$ ls
+asg0	srani
+Suryas-MBP-2:VMshare suryarani$ cd srani/
+Suryas-MBP-2:srani suryarani$ ls
+asgn0			asgn2			personalDocSign.pdf
+asgn1			asgn3
+Suryas-MBP-2:srani suryarani$ cd asgn2/
+Suryas-MBP-2:asgn2 suryarani$ ls
+Makefile	hello		hello3		httpserver	httpserver.o
+README.md	hello2		hello4		httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "I think i implemented multithreading"
+[master 9c5f36d] I think i implemented multithreading
+ 1 file changed, 714 insertions(+)
+ create mode 100644 asgn2/httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ git push
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+Enumerating objects: 6, done.
+Counting objects: 100% (6/6), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 5.22 KiB | 5.22 MiB/s, done.
+Total 4 (delta 1), reused 0 (delta 0)
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+   28636ae..9c5f36d  master -> master
+Suryas-MBP-2:asgn2 suryarani$ ls
+DESIGN.pdf	WRITEUP.pdf	hello3		httpserver.c
+Makefile	hello		hello4		httpserver.o
+README.md	hello2		httpserver
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c Makefile DESIGN.pdf WRITEUP.pdf README.md 
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "Havent changed anything just want to test the multithreading"
+[master 9b0cdeb] Havent changed anything just want to test the multithreading
+ 3 files changed, 14 insertions(+)
+ create mode 100644 asgn2/DESIGN.pdf
+ create mode 100755 asgn2/Makefile
+ create mode 100644 asgn2/WRITEUP.pdf
+Suryas-MBP-2:asgn2 suryarani$ git push 
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+Enumerating objects: 8, done.
+Counting objects: 100% (8/8), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (6/6), done.
+Writing objects: 100% (6/6), 51.04 KiB | 10.21 MiB/s, done.
+Total 6 (delta 1), reused 0 (delta 0)
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+   9c5f36d..9b0cdeb  master -> master
+Suryas-MBP-2:asgn2 suryarani$ cd ../asgn1
+Suryas-MBP-2:asgn1 suryarani$ ls
+Accept:					httpserver
+DESIGN.pdf				httpserver.c
+Host:					httpserver.o
+Makefile				keke
+README.md				localfile.txt
+User-Agent:				newTest
+WRITEUP.pdf				newpee
+a.out					otherTest
+binaryTest				pee
+clarkScript.py				peen
+dest					peen.txt
+empty					simple
+file					simple.c
+fle					test
+hello_					testfile
+hello_file				thisfileisdefiniadjsfkljasbyadklfjf
+Suryas-MBP-2:asgn1 suryarani$ ls
+Accept:					httpserver
+DESIGN.pdf				httpserver.c
+Host:					httpserver.o
+Makefile				keke
+README.md				localfile.txt
+User-Agent:				newTest
+WRITEUP.pdf				newpee
+a.out					otherTest
+binaryTest				pee
+clarkScript.py				peen
+dest					peen.txt
+empty					simple
+file					simple.c
+fle					test
+hello_					testfile
+hello_file				thisfileisdefiniadjsfkljasbyadklfjf
+Suryas-MBP-2:asgn1 suryarani$ cd ..
+Suryas-MBP-2:srani suryarani$ cd asgn2
+Suryas-MBP-2:asgn2 suryarani$ ls
+DESIGN.pdf	bigSmall.sh	hello5		logF		requests.sh
+Makefile	hello		httpserver	logFile		test.sh
+README.md	hello2		httpserver.c	log_file
+WRITEUP.pdf	hello3		httpserver.o	other_log
+big		hello4		log		out
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "SHould have been commiting more now im getting segfaults idk where tho"
+[master 5eaf36f] SHould have been commiting more now im getting segfaults idk where tho
+ 1 file changed, 245 insertions(+), 17 deletions(-)
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c 
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "Kinda close to finishing the logging maybe not i still need to be able to split it into 20 bytes correctly"
+[master 602ff58] Kinda close to finishing the logging maybe not i still need to be able to split it into 20 bytes correctly
+ 1 file changed, 34 insertions(+), 15 deletions(-)
+Suryas-MBP-2:asgn2 suryarani$ git push 
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+ ! [rejected]        master -> master (fetch first)
+error: failed to push some refs to 'git@git.ucsc.edu:cse130/spring20-palvaro/srani.git'
+hint: Updates were rejected because the remote contains work that you do
+hint: not have locally. This is usually caused by another repository pushing
+hint: to the same ref. You may want to first integrate the remote changes
+hint: (e.g., 'git pull ...') before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+Suryas-MBP-2:asgn2 suryarani$ git push
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+ ! [rejected]        master -> master (fetch first)
+error: failed to push some refs to 'git@git.ucsc.edu:cse130/spring20-palvaro/srani.git'
+hint: Updates were rejected because the remote contains work that you do
+hint: not have locally. This is usually caused by another repository pushing
+hint: to the same ref. You may want to first integrate the remote changes
+hint: (e.g., 'git pull ...') before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+Suryas-MBP-2:asgn2 suryarani$ git pull
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+remote: Enumerating objects: 4, done.
+remote: Counting objects: 100% (4/4), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 3 (delta 1), reused 0 (delta 0), pack-reused 0
+Unpacking objects: 100% (3/3), done.
+From git.ucsc.edu:cse130/spring20-palvaro/srani
+   9b0cdeb..1bcb175  master     -> origin/master
+Merge made by the 'recursive' strategy.
+ asgn1.feedback | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 asgn1.feedback
+Suryas-MBP-2:asgn2 suryarani$ git push
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+Enumerating objects: 16, done.
+Counting objects: 100% (14/14), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 3.57 KiB | 1.79 MiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0)
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+   1bcb175..a84bf02  master -> master
+Suryas-MBP-2:asgn2 suryarani$ ls
+DESIGN.pdf	bigSmall.sh	hello5		logF		out
+Makefile	hello		httpserver	logFile		requests.sh
+README.md	hello2		httpserver.c	log_file	test.sh
+WRITEUP.pdf	hello3		httpserver.o	mlog
+big		hello4		log		other_log
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "Able to log requests simultaneously but i dont think it continues to add to the file for requests later not sent right away"
+[master dafc976] Able to log requests simultaneously but i dont think it continues to add to the file for requests later not sent right away
+ 1 file changed, 47 insertions(+), 230 deletions(-)
+Suryas-MBP-2:asgn2 suryarani$ git push
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 912 bytes | 912.00 KiB/s, done.
+Total 4 (delta 3), reused 0 (delta 0)
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+   a84bf02..dafc976  master -> master
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "Removed printing binary to stdout should fix unknown exceptions"
+[master 64c1812] Removed printing binary to stdout should fix unknown exceptions
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+Suryas-MBP-2:asgn2 suryarani$ git push
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 499 bytes | 499.00 KiB/s, done.
+Total 4 (delta 3), reused 0 (delta 0)
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+   dafc976..64c1812  master -> master
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "Removing gcc compiler warnings"
+[master 828d381] Removing gcc compiler warnings
+ 1 file changed, 9 insertions(+), 13 deletions(-)
+Suryas-MBP-2:asgn2 suryarani$ git push
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 464 bytes | 464.00 KiB/s, done.
+Total 4 (delta 3), reused 0 (delta 0)
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+   64c1812..828d381  master -> master
+Suryas-MBP-2:asgn2 suryarani$ 
+  [Restored May 20, 2020 at 1:16:24 PM]
+Last login: Wed May 20 13:16:18 on console
+Restored session: Wed May 20 13:15:28 PDT 2020
+Suryas-MBP-2:asgn2 suryarani$ ls
+DESIGN.pdf	bigSmall.sh	hello5		log		mlog
+Makefile	hello		hello6		logF		other_log
+README.md	hello2		httpserver	logFile		out
+WRITEUP.pdf	hello3		httpserver.c	log_file	requests.sh
+big		hello4		httpserver.o	many.sh		test.sh
+Suryas-MBP-2:asgn2 suryarani$ ls
+DESIGN.pdf	bigSmall.sh	hello5		log		mlog
+Makefile	hello		hello6		logF		other_log
+README.md	hello2		httpserver	logFile		out
+WRITEUP.pdf	hello3		httpserver.c	log_file	requests.sh
+big		hello4		httpserver.o	many.sh		test.sh
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "Havent changed anything idk why it doesnt work for multiple puts it works fine on mine"
+[master 3a3ae8e] Havent changed anything idk why it doesnt work for multiple puts it works fine on mine
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+Suryas-MBP-2:asgn2 suryarani$ git push
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 541 bytes | 541.00 KiB/s, done.
+Total 4 (delta 3), reused 0 (delta 0)
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+   828d381..3a3ae8e  master -> master
+Suryas-MBP-2:asgn2 suryarani$ git add httpserver.c
+Suryas-MBP-2:asgn2 suryarani$ ls
+DESIGN.pdf	bigSmall.sh	hello5		log		mlog
+Makefile	hello		hello6		logF		other_log
+README.md	hello2		httpserver	logFile		out
+WRITEUP.pdf	hello3		httpserver.c	log_file	requests.sh
+big		hello4		httpserver.o	many.sh		test.sh
+Suryas-MBP-2:asgn2 suryarani$ git commit -m "IT SHOULDNT SEGFAULT WHY IS IT NOT WORKING BROOO"
+[master 7a99baf] IT SHOULDNT SEGFAULT WHY IS IT NOT WORKING BROOO
+ 1 file changed, 21 insertions(+), 13 deletions(-)
+Suryas-MBP-2:asgn2 suryarani$ git push
+Enter passphrase for key '/Users/suryarani/.ssh/id_ed25519': 
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 693 bytes | 693.00 KiB/s, done.
+Total 4 (delta 3), reused 0 (delta 0)
+To git.ucsc.edu:cse130/spring20-palvaro/srani.git
+   3a3ae8e..7a99baf  master -> master
+Suryas-MBP-2:asgn2 suryarani$ ls
+DESIGN.pdf	bigSmall.sh	hello5		log		mlog
+Makefile	hello		hello6		logF		other_log
+README.md	hello2		httpserver	logFile		out
+WRITEUP.pdf	hello3		httpserver.c	log_file	requests.sh
+big		hello4		httpserver.o	many.sh		test.sh
+Suryas-MBP-2:asgn2 suryarani$ vim bigaf
+
+jsdfkljskladjfl;aksdjf k;adjskfj;aklsdjfkl;jasdfkjaskd;fjaksjdfklasjdflkjaksdlfj
+asdkjf;ajsdfjklasdkjlfjasd;aklsfjklasdfkjasdk;lfjdsjklsdfkjladsjkadsjkfjdsdsakjl
+adskjlasd;kfjla;sdfjasdk;flj;skaldfjk;lasdfjksadfjks;f
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+-- INSERT -- ;wq
+:wq
+:wq
+q
+ls
+

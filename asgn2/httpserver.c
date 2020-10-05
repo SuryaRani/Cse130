@@ -207,7 +207,8 @@ char *get(int clientSock, char *file, char *msg, int log)
             failsDiv /= 10;
 
         } while (failsDiv != 0);
-        healthLen = trialsLen + failsLen + 1;
+        pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;Len = trialsLen + failsLen + 1;
 
         sprintf(msg, "HTTP/1.1 200 OK \r\nContent-Length: %d\r\n\r\n%d\n%d", healthLen, fails, trials);
         send(clientSock, msg, strlen(msg), 0);
